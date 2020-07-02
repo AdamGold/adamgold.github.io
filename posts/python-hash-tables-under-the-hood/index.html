@@ -13,15 +13,28 @@ By the end of this article, you will have an understanding of:
 <meta name="robots" content="noodp"/>
 <link rel="canonical" href="https://adamgold.github.io/posts/python-hash-tables-under-the-hood/" />
 
-<title itemprop="name">Python Hash Tables Under the Hood | Adam Gold</title>
-<meta itemprop="name" content="Python Hash Tables Under the Hood | Adam Gold" />
-<meta name="application-name" content="Python Hash Tables Under the Hood | Adam Gold" />
-<meta name="description" content="Are you a Python developer eager to learn more about the internals of the language, and to better understand how Python hash tables and data structures work? Or maybe you are experienced in other programming languages and want to understand how and where hash tables are implemented in Python? You&#39;ve come to the right place!" />
-<meta itemprop="description" content="Are you a Python developer eager to learn more about the internals of the language, and to better understand how Python hash tables and data structures work? Or maybe you are experienced in other programming languages and want to understand how and where hash tables are implemented in Python? You&#39;ve come to the right place!" />
+
 <base href="https://adamgold.github.io/posts/python-hash-tables-under-the-hood/">
 <meta name="url" content="https://adamgold.github.io/posts/python-hash-tables-under-the-hood/" />
 <meta property="og:locale" content="en">
 
+ 
+  <title itemprop="name">Python Hash Tables Under the Hood | Adam Gold</title>
+  <meta itemprop="name" content="Python Hash Tables Under the Hood | Adam Gold" />
+  <meta name="description" content="Are you a Python developer eager to learn more about the internals of the language, and to better understand how Python hash tables and data structures work? Or maybe you are experienced in other programming languages and want to understand how and where hash tables are implemented in Python? You&#39;ve come to the right place!" />
+  <meta itemprop="description" content="Are you a Python developer eager to learn more about the internals of the language, and to better understand how Python hash tables and data structures work? Or maybe you are experienced in other programming languages and want to understand how and where hash tables are implemented in Python? You&#39;ve come to the right place!" />
+  
+  
+  
+
+  <meta property="og:type" content="article" />
+  <meta property="article:publisher" content="" /> 
+  <meta property="og:article:published_time" content=2020-06-30T18:53:11&#43;0300 /> 
+  <meta property="article:published_time" content=2020-06-30T18:53:11&#43;0300 />
+  
+  
+  
+  
 
 
 
@@ -359,17 +372,17 @@ new_hash <span style="color:#f92672">=</span> (current_index<span style="color:#
 <p>On to the <a href="https://github.com/python/cpython/blob/master/Objects/dictobject.c#L760">lookup method</a>. Here&rsquo;s a simplified Python version, followed by an explanation:</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 1</span>    DUMMY <span style="color:#f92672">=</span> <span style="color:#f92672">-</span><span style="color:#ae81ff">2</span>
 <span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 2</span>    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">lookup</span>(key: Any, hash_: int) <span style="color:#f92672">-&gt;</span> Tuple[int, Any]:
-<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 3</span>    mask <span style="color:#f92672">=</span> len(table) <span style="color:#f92672">-</span> <span style="color:#ae81ff">1</span>
-<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 4</span>    freeslot <span style="color:#f92672">=</span> None
-<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 5</span>    <span style="color:#66d9ef">for</span> index <span style="color:#f92672">in</span> generate_probes(hash_, mask):
-<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 6</span>        elem <span style="color:#f92672">=</span> table[index]
-<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 7</span>        <span style="color:#66d9ef">if</span> elem <span style="color:#f92672">is</span> None:
-<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 8</span>            <span style="color:#66d9ef">return</span> (index, None) <span style="color:#66d9ef">if</span> freeslot <span style="color:#f92672">is</span> None <span style="color:#66d9ef">else</span> (freeslot, DUMMY)
-<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 9</span>        <span style="color:#66d9ef">elif</span> elem <span style="color:#f92672">==</span> DUMMY:
-<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">10</span>            <span style="color:#66d9ef">if</span> freeslot <span style="color:#f92672">is</span> None:
-<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">11</span>                freeslot <span style="color:#f92672">=</span> index
-<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">12</span>        <span style="color:#66d9ef">elif</span> elem<span style="color:#f92672">.</span>key <span style="color:#f92672">is</span> key <span style="color:#f92672">or</span> (elem<span style="color:#f92672">.</span>hash <span style="color:#f92672">==</span> hash_ <span style="color:#f92672">and</span> elem<span style="color:#f92672">.</span>key <span style="color:#f92672">==</span> key):
-<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">13</span>            <span style="color:#66d9ef">return</span> (index, elem)
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 3</span>        mask <span style="color:#f92672">=</span> len(table) <span style="color:#f92672">-</span> <span style="color:#ae81ff">1</span>
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 4</span>        freeslot <span style="color:#f92672">=</span> None
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 5</span>        <span style="color:#66d9ef">for</span> index <span style="color:#f92672">in</span> generate_probes(hash_, mask):
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 6</span>            elem <span style="color:#f92672">=</span> table[index]
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 7</span>            <span style="color:#66d9ef">if</span> elem <span style="color:#f92672">is</span> None:
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 8</span>                <span style="color:#66d9ef">return</span> (index, None) <span style="color:#66d9ef">if</span> freeslot <span style="color:#f92672">is</span> None <span style="color:#66d9ef">else</span> (freeslot, DUMMY)
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 9</span>            <span style="color:#66d9ef">elif</span> elem <span style="color:#f92672">==</span> DUMMY:
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">10</span>                <span style="color:#66d9ef">if</span> freeslot <span style="color:#f92672">is</span> None:
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">11</span>                    freeslot <span style="color:#f92672">=</span> index
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">12</span>            <span style="color:#66d9ef">elif</span> elem<span style="color:#f92672">.</span>key <span style="color:#f92672">is</span> key <span style="color:#f92672">or</span> (elem<span style="color:#f92672">.</span>hash <span style="color:#f92672">==</span> hash_ <span style="color:#f92672">and</span> elem<span style="color:#f92672">.</span>key <span style="color:#f92672">==</span> key):
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">13</span>                <span style="color:#66d9ef">return</span> (index, elem)
 </code></pre></div><ul>
 <li>
 <p><strong>Line 5</strong> calculates the index with the <code>generate_probes</code> method shown in the next code block below.</p>
@@ -413,11 +426,11 @@ new_hash <span style="color:#f92672">=</span> (current_index<span style="color:#
 </ul>
 <p>If you were to write the search operation, it would have looked along the lines of the following:</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">1</span>    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">search</span>(key: Any) <span style="color:#f92672">-&gt;</span> Any:  <span style="color:#75715e"># usually implemented as __getitem__</span>
-<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">2</span>    hashvalue <span style="color:#f92672">=</span> hash(key)
-<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">3</span>    index, elem <span style="color:#f92672">=</span> lookup(key, hashvalue)
-<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">4</span>    <span style="color:#66d9ef">if</span> elem <span style="color:#f92672">is</span> None <span style="color:#f92672">or</span> elem <span style="color:#f92672">==</span> DUMMY:
-<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">5</span>        <span style="color:#66d9ef">raise</span> <span style="color:#a6e22e">KeyError</span>(key)
-<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">6</span>    <span style="color:#66d9ef">return</span> table[index]
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">2</span>        hashvalue <span style="color:#f92672">=</span> hash(key)
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">3</span>        index, elem <span style="color:#f92672">=</span> lookup(key, hashvalue)
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">4</span>        <span style="color:#66d9ef">if</span> elem <span style="color:#f92672">is</span> None <span style="color:#f92672">or</span> elem <span style="color:#f92672">==</span> DUMMY:
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">5</span>            <span style="color:#66d9ef">raise</span> <span style="color:#a6e22e">KeyError</span>(key)
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">6</span>        <span style="color:#66d9ef">return</span> table[index]
 </code></pre></div><p>As I&rsquo;ve mentioned before, the <code>DUMMY</code> and <code>None</code> handling is done within the caller - while this specific method raises a <code>KeyError</code>, other operations could have still used that index as you will soon see.</p>
 <div class="toast add-margin">
 	<div class="toast__content">
@@ -875,7 +888,7 @@ new_hash <span style="color:#f92672">=</span> (current_index<span style="color:#
 </code></pre></div><p>This method checks if the dictionary contains a certain key. It does so by checking the result of <code>_lookup</code>, it only contains indices below zero in the case of <code>DUMMY</code> or <code>FREE</code>.</p>
 <h4 id="__iter__"><code>__iter__</code></h4>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">1</span>    <span style="color:#66d9ef">def</span> __iter__(self):
-<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">2</span>            <span style="color:#66d9ef">return</span> iter([dict_key<span style="color:#f92672">.</span>key <span style="color:#66d9ef">for</span> dict_key <span style="color:#f92672">in</span> self<span style="color:#f92672">.</span>key]s)
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">2</span>        <span style="color:#66d9ef">return</span> iter([dict_key<span style="color:#f92672">.</span>key <span style="color:#66d9ef">for</span> dict_key <span style="color:#f92672">in</span> self<span style="color:#f92672">.</span>key]s)
 </code></pre></div><p>The dictionary&rsquo;s keys list holds <code>DictKey</code> instances. This method creates a new list of actual the actual keys (without the wrapper class) and wraps it inside of an iterable.</p>
 <h3 id="using-your-custom-dictionary">Using your custom dictionary</h3>
 <p>Here&rsquo;s how you can use your brand new dictionary:</p>
