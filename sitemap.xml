@@ -8,7 +8,27 @@
   </url>
   
   <url>
+    <loc>https://adamgold.github.io/tags/dictionary/</loc>
+    <lastmod>2020-06-30T18:53:11+03:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://adamgold.github.io/tags/hash-tables/</loc>
+    <lastmod>2020-06-30T18:53:11+03:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://adamgold.github.io/tags/intermediate/</loc>
+    <lastmod>2020-06-30T18:53:11+03:00</lastmod>
+  </url>
+  
+  <url>
     <loc>https://adamgold.github.io/posts/</loc>
+    <lastmod>2020-06-30T18:53:11+03:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://adamgold.github.io/tags/python/</loc>
     <lastmod>2020-06-30T18:53:11+03:00</lastmod>
   </url>
   
@@ -18,11 +38,31 @@
   </url>
   
   <url>
-    <loc>https://adamgold.github.io/categories/</loc>
+    <loc>https://adamgold.github.io/tags/</loc>
+    <lastmod>2020-06-30T18:53:11+03:00</lastmod>
   </url>
   
   <url>
-    <loc>https://adamgold.github.io/tags/</loc>
+    <loc>https://adamgold.github.io/posts/awesome-python-module-you-probably-arent-using/</loc>
+    <lastmod>2019-03-05T22:57:10+03:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://adamgold.github.io/tags/best-practices/</loc>
+    <lastmod>2019-03-05T22:57:10+03:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://adamgold.github.io/tags/modules/</loc>
+    <lastmod>2019-03-05T22:57:10+03:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://adamgold.github.io/about/</loc>
+  </url>
+  
+  <url>
+    <loc>https://adamgold.github.io/categories/</loc>
   </url>
   
 </urlset>

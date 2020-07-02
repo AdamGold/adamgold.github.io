@@ -9,12 +9,23 @@
 <meta name="description" content="Are you a Python developer eager to learn more about the internals of the language, and to better understand how Python hash tables and data structures work? Or maybe you are experienced in other programming languages and want to understand how and where hash tables are implemented in Python? You&amp;rsquo;ve come to the right place!
 By the end of this article, you will have an understanding of:
  What a hash table is How and where hash tables are implemented in Python How the hash function works What&amp;rsquo;s happening under the hood in dictionaries The pros and cons of hash tables in Python How are Python dictionaries so fast How to hash your custom classes  This tutorial is aimed at intermediate and proficient Python developers."/>
-<meta name="keywords" content="security, programming, python, developer"/>
+<meta name="keywords" content="blog, security, programming, python, developer"/>
 <meta name="robots" content="noodp"/>
 <link rel="canonical" href="https://adamgold.github.io/posts/python-hash-tables-under-the-hood/" />
 
+<title itemprop="name">Python Hash Tables Under the Hood | Adam Gold</title>
+<meta itemprop="name" content="Python Hash Tables Under the Hood | Adam Gold" />
+<meta name="application-name" content="Python Hash Tables Under the Hood | Adam Gold" />
+<meta name="description" content="Are you a Python developer eager to learn more about the internals of the language, and to better understand how Python hash tables and data structures work? Or maybe you are experienced in other programming languages and want to understand how and where hash tables are implemented in Python? You&#39;ve come to the right place!" />
+<meta itemprop="description" content="Are you a Python developer eager to learn more about the internals of the language, and to better understand how Python hash tables and data structures work? Or maybe you are experienced in other programming languages and want to understand how and where hash tables are implemented in Python? You&#39;ve come to the right place!" />
+<base href="https://adamgold.github.io/posts/python-hash-tables-under-the-hood/">
+<meta name="url" content="https://adamgold.github.io/posts/python-hash-tables-under-the-hood/" />
+<meta property="og:locale" content="en">
 
 
+
+
+<script type="text/javascript" src="/scripts/global.js"></script>
 
 
 <link rel="stylesheet" href="https://adamgold.github.io/assets/style.css">
@@ -29,16 +40,12 @@ By the end of this article, you will have an understanding of:
 
 <meta name="twitter:card" content="summary"/>
 <meta name="twitter:title" content="Python Hash Tables Under the Hood"/>
-<meta name="twitter:description" content="Are you a Python developer eager to learn more about the internals of the language, and to better understand how Python hash tables and data structures work? Or maybe you are experienced in other programming languages and want to understand how and where hash tables are implemented in Python? You&rsquo;ve come to the right place!
-By the end of this article, you will have an understanding of:
- What a hash table is How and where hash tables are implemented in Python How the hash function works What&rsquo;s happening under the hood in dictionaries The pros and cons of hash tables in Python How are Python dictionaries so fast How to hash your custom classes  This tutorial is aimed at intermediate and proficient Python developers."/>
+<meta name="twitter:description" content="Are you a Python developer eager to learn more about the internals of the language, and to better understand how Python hash tables and data structures work? Or maybe you are experienced in other programming languages and want to understand how and where hash tables are implemented in Python? You&#39;ve come to the right place!"/>
 
 
 
 <meta property="og:title" content="Python Hash Tables Under the Hood" />
-<meta property="og:description" content="Are you a Python developer eager to learn more about the internals of the language, and to better understand how Python hash tables and data structures work? Or maybe you are experienced in other programming languages and want to understand how and where hash tables are implemented in Python? You&rsquo;ve come to the right place!
-By the end of this article, you will have an understanding of:
- What a hash table is How and where hash tables are implemented in Python How the hash function works What&rsquo;s happening under the hood in dictionaries The pros and cons of hash tables in Python How are Python dictionaries so fast How to hash your custom classes  This tutorial is aimed at intermediate and proficient Python developers." />
+<meta property="og:description" content="Are you a Python developer eager to learn more about the internals of the language, and to better understand how Python hash tables and data structures work? Or maybe you are experienced in other programming languages and want to understand how and where hash tables are implemented in Python? You&#39;ve come to the right place!" />
 <meta property="og:type" content="article" />
 <meta property="og:url" content="https://adamgold.github.io/posts/python-hash-tables-under-the-hood/" />
 <meta property="article:published_time" content="2020-06-30T18:53:11+03:00" />
@@ -75,6 +82,14 @@ By the end of this article, you will have an understanding of:
           <li><a href="/about">About</a></li>
         
       
+        
+          <li><a href="https://github.com/AdamGold">GitHub</a></li>
+        
+      
+        
+          <li><a href="https://www.linkedin.com/in/adamgold7/">LinkedIn</a></li>
+        
+      
       
     
   </ul>
@@ -83,6 +98,14 @@ By the end of this article, you will have an understanding of:
     
       
         <li><a href="/about">About</a></li>
+      
+    
+      
+        <li><a href="https://github.com/AdamGold">GitHub</a></li>
+      
+    
+      
+        <li><a href="https://www.linkedin.com/in/adamgold7/">LinkedIn</a></li>
       
     
   </ul>
@@ -128,10 +151,22 @@ By the end of this article, you will have an understanding of:
 
       
       
-        <span class="post-read-time">— 32 min read</span>
+        <span class="post-read-time">— 29 min read</span>
       
     </div>
 
+    
+      <span class="post-tags">
+        
+          #<a href="https://adamgold.github.io/tags/python/">python</a>&nbsp;
+        
+          #<a href="https://adamgold.github.io/tags/hash-tables/">hash-tables</a>&nbsp;
+        
+          #<a href="https://adamgold.github.io/tags/intermediate/">intermediate</a>&nbsp;
+        
+          #<a href="https://adamgold.github.io/tags/dictionary/">dictionary</a>&nbsp;
+        
+      </span>
     
 
     
@@ -164,6 +199,7 @@ By the end of this article, you will have an understanding of:
         <li><a href="#dictionary-resize">Dictionary Resize</a></li>
         <li><a href="#private-dictionary-versions">Private Dictionary Versions</a></li>
         <li><a href="#putting-it-all-together">Putting It All Together</a></li>
+        <li><a href="#using-your-custom-dictionary">Using your custom dictionary</a></li>
         <li><a href="#dictionaries-order">Dictionaries Order</a></li>
       </ul>
     </li>
@@ -171,6 +207,7 @@ By the end of this article, you will have an understanding of:
     <li><a href="#understanding-when-to-use-python-hash-tables">Understanding When to Use Python Hash Tables</a>
       <ul>
         <li><a href="#set-vs-list">set vs list</a></li>
+        <li><a href="#dict-vs-namedtuple">dict vs namedtuple</a></li>
       </ul>
     </li>
     <li><a href="#conclusion">Conclusion</a></li>
@@ -195,8 +232,16 @@ By the end of this article, you will have an understanding of:
 <p>Before diving into the Python implementation details, you first need to understand what hash tables are and how to use them.</p>
 <h3 id="what-is-a-hash-table">What Is a Hash Table</h3>
 <p>Have you ever thought about how a Python dictionary is stored in memory? The memory in our computers can be thought of as a simple array with numeric indexes:</p>
-<p>{% img &lsquo;python-hash-tables-memory-array&rsquo; centered=True %}</p>
-<p>So how come Python knows which value belongs to which key, when using non numeric keys? The simplest solution would be to have each element in the array store both key and value, iterate over the array and check element by element, until finding the one that contains the desired key. This solution is far from being perfomance efficient, as it would require iterating through the array repeatedly &ndash; And this is where hash tables come to play.</p>
+<p>
+<figure class="white-img-div" >
+    
+        <img class="center" src="/images/memory-array.png"
+             />
+        
+    
+</figure>
+
+So how come Python knows which value belongs to which key, when using non numeric keys? The simplest solution would be to have each element in the array store both key and value, iterate over the array and check element by element, until finding the one that contains the desired key. This solution is far from being perfomance efficient, as it would require iterating through the array repeatedly &ndash; And this is where hash tables come to play.</p>
 <p>A hash table is a structure that is designed to store a list of key-value pairs, without compromising on speed and efficiency of manipulating and searching the structure.</p>
 <p>A hash table uses a <strong>hash function</strong> to compute an index, into an array of slots, from which the desired value can be found.</p>
 <h3 id="how-does-a-hash-function-work">How Does a Hash Function Work</h3>
@@ -204,16 +249,31 @@ By the end of this article, you will have an understanding of:
 <p>You should start off with a simple example: A dictionary-like object, containing 3 products and their inventory count.</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">{<span style="color:#e6db74">&#34;avocados&#34;</span>: <span style="color:#ae81ff">10</span>, <span style="color:#e6db74">&#34;oranges&#34;</span>: <span style="color:#ae81ff">4</span>, <span style="color:#e6db74">&#34;apples&#34;</span>: <span style="color:#ae81ff">2</span>}
 </code></pre></div><p>As for the hash function, you would need a method to turn the string keys into numeric values so you can quickly look them up in the memory.</p>
-<p>{% exercise &ldquo;Try it yourself&rdquo; %}</p>
-<p>Try to think of a simple operation to perform on string values to turn them into numeric values.</p>
-<p>{% endexercise %}</p>
-<p>{% solution &ldquo;Try it yourself&rdquo; %}</p>
-<p>There are many methods for achieveing that. How about calculating the length of each key?</p>
-<p>{% endsolution %}</p>
+<div class="toast add-margin">
+	<div class="toast__content">
+		<p class="toast__type">Try it yourself</p>
+		<p class="toast__message dark-text">
+			Try to think of a simple operation to perform on string values to turn them into numeric values.
+		</p>
+		<div class="toggle-solution" id="basic-hash">Show Solution</div>
+		<div class="solution dark-text" id="solution-basic-hash">
+			There are many methods for achieveing that. How about calculating the length of each key?
+		</div>
+	</div>
+</div>
+
 <p>So you&rsquo;ve decided to calculate the length of the string values, awesome! Don&rsquo;t forget that the numeric values must be within 0 to 3 for them to fit inside the 3 elements array. You can use the modulo operator on the lengths for that:</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">length of the key <span style="color:#f92672">%</span> table_size (<span style="color:#ae81ff">3</span>)
 </code></pre></div><p>For example, <code>avocados</code> has 8 letters, therefore it would be placed in the 2nd index. This is the final array:</p>
-<p>{% img &lsquo;python-hash-tables-first-hash-table&rsquo; centered=True %}</p>
+
+<figure class="white-img-div" >
+    
+        <img class="center" src="/images/first-hash-table.png"
+             />
+        
+    
+</figure>
+
 <p>Hurrah! You&rsquo;ve just built your first hash table! Hold on for a second there. What happens when two keys has the same length? You won&rsquo;t be able to insert both at the same index. This is called a <strong>hash collision</strong>.</p>
 <h3 id="how-to-handle-collisions">How to Handle Collisions</h3>
 <p>Hash collisions are practically unavoidable when hashing a random subset of a large set of possible keys. There are multiple strategies for collision handling - All of which require that the keys be stored in the table, together with the associated values. Two of the most common ones are <strong>Open Addressing</strong> and <strong>Separate Chaining</strong>.</p>
@@ -223,12 +283,28 @@ By the end of this article, you will have an understanding of:
 <p>Consider the following example of a simple hash table mapping names to phone numbers using your hash function from earlier:</p>
 </li>
 </ul>
-<p>{% img &lsquo;python-hash-tables-open-addressing&rsquo; centered=True %}</p>
+
+<figure class="white-img-div" >
+    
+        <img class="center" src="/images/open-addressing.png"
+             />
+        
+    
+</figure>
+
 <p><em>John</em> and <em>Lisa</em> collide since they both hash to the index <code>0</code>. <em>Lisa</em> was inserted after <em>John</em>, so it got inserted into one index further - <code>1</code>. Note that <em>Sandra Dee</em> has a unique hash, but nevertheless collided with <em>Lisa Smith</em>, that had previously collided with <em>John Smith</em>.</p>
 <ul>
 <li><strong>Separate Chaining:</strong> As opposed to open addressing, this strategy consists of storing multiple arrays. Each record contains a separate array which holds all of the elements with the same calculated index. The following is the sample table from earlier, using the separate chaining strategy:</li>
 </ul>
-<p>{% img &lsquo;python-hash-tables-separate-chaining&rsquo; centered=True %}</p>
+
+<figure class="white-img-div" >
+    
+        <img class="center" src="/images/separate-chaining.png"
+             />
+        
+    
+</figure>
+
 <p>This time, <em>Sandra Dee</em> did not collide with <em>Sandra</em> since each element holds a pointer to an array of collided records.</p>
 <h2 id="understanding-python-hash-tables">Understanding Python Hash Tables</h2>
 <p>When you come to think about it, Python dictionary keys allow way more types than just integers. They can be strings, functions, and more. How does Python store these keys inside the memory, and know where to find their values?</p>
@@ -236,32 +312,21 @@ By the end of this article, you will have an understanding of:
 <p>Let&rsquo;s dive into some of the internals to better understand how all of these new concepts you&rsquo;ve just learned are put to practice.</p>
 <h3 id="exploring-python-hash-function">Exploring Python Hash Function</h3>
 <p>Python hash function takes a hashable object and hashes into 32/64 bits (depends on the system architecture). The bits are well distributed as can be seen in the following example, showing two very similar strings - &ldquo;consecutive strings&rdquo;, commonly used in dictionaries, with very different hash values:</p>
-<pre><code class="language-pycon" data-lang="pycon">
-</code></pre><blockquote>
-<blockquote>
-<blockquote>
-<p>&ldquo;{0:b}&quot;.format(hash(&lsquo;hash1&rsquo;))
-&lsquo;110000010001001001011000101001010110101110010010000001101111&rsquo;</p>
-</blockquote>
-</blockquote>
-</blockquote>
-<blockquote>
-<blockquote>
-<blockquote>
-<p>&ldquo;{0:b}&quot;.format(hash(&lsquo;hash&rsquo;))
-&lsquo;101110001101101111011001100001110000000110011011000110110000&rsquo;</p>
-</blockquote>
-</blockquote>
-</blockquote>
-<pre><code>
-</code></pre><p>This distribution lowers the odds of a hash collision, which in turn makes the dictionary much faster. Furthermore, you should know that a hash value is only constant for the current instance of the process. You might have stumbled upon different hashes of the same object and wondered why it happened. The main reason for this phenomenon is security related: Hash tables are vulnerable to hash collision DoS attacks when using constant hash values. Python 3.6 introduced an implementation of <a href="https://en.wikipedia.org/wiki/SipHash">SipHash</a> to prevent these attacks. You can read more about it on <a href="https://www.python.org/dev/peps/pep-0456/">PEP 456</a>. The following demonstrates different hashes on two different runs:</p>
-<pre><code class="language-pycon" data-lang="pycon">&gt;&gt;&gt; hash(&quot;hash&quot;)
-832529968546820528
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">
+<span style="color:#f92672">&gt;&gt;&gt;</span> <span style="color:#e6db74">&#34;{0:b}&#34;</span><span style="color:#f92672">.</span>format(hash(<span style="color:#e6db74">&#39;hash1&#39;</span>))
+<span style="color:#f92672">&gt;&gt;&gt;</span> <span style="color:#e6db74">&#39;110000010001001001011000101001010110101110010010000001101111&#39;</span>
 
-&gt;&gt;&gt; # different run
-&gt;&gt;&gt; hash(&quot;hash&quot;)
-8049792375956551724
-</code></pre><h3 id="handling-collisions-in-python">Handling Collisions in Python</h3>
+<span style="color:#f92672">&gt;&gt;&gt;</span> <span style="color:#e6db74">&#34;{0:b}&#34;</span><span style="color:#f92672">.</span>format(hash(<span style="color:#e6db74">&#39;hash&#39;</span>))
+<span style="color:#f92672">&gt;&gt;&gt;</span> <span style="color:#e6db74">&#39;101110001101101111011001100001110000000110011011000110110000&#39;</span>
+
+</code></pre></div><p>This distribution lowers the odds of a hash collision, which in turn makes the dictionary much faster. Furthermore, you should know that a hash value is only constant for the current instance of the process. You might have stumbled upon different hashes of the same object and wondered why it happened. The main reason for this phenomenon is security related: Hash tables are vulnerable to hash collision DoS attacks when using constant hash values. Python 3.6 introduced an implementation of <a href="https://en.wikipedia.org/wiki/SipHash">SipHash</a> to prevent these attacks. You can read more about it on <a href="https://www.python.org/dev/peps/pep-0456/">PEP 456</a>. The following demonstrates different hashes on two different runs:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">&gt;&gt;&gt;</span> hash(<span style="color:#e6db74">&#34;hash&#34;</span>)
+<span style="color:#ae81ff">832529968546820528</span>
+
+<span style="color:#f92672">&gt;&gt;&gt;</span> <span style="color:#75715e"># different run</span>
+<span style="color:#f92672">&gt;&gt;&gt;</span> hash(<span style="color:#e6db74">&#34;hash&#34;</span>)
+<span style="color:#ae81ff">8049792375956551724</span>
+</code></pre></div><h3 id="handling-collisions-in-python">Handling Collisions in Python</h3>
 <p>Python uses <strong>open addressing</strong> to resolve hash coliisions. Python source code suggets that open addressing is preferred over chaining since the link overhead for chaining would be substantial. Earlier, you&rsquo;ve seen an example of linear probing. Python uses <strong>random probing</strong>, as can be seen in the <a href="https://github.com/python/cpython/blob/master/Objects/dictobject.c#L163">source code</a>, or in this very simplified Python code:</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">perturb <span style="color:#f92672">=</span> hash
 perturb <span style="color:#f92672">&gt;&gt;=</span> <span style="color:#ae81ff">5</span>
@@ -269,28 +334,42 @@ new_hash <span style="color:#f92672">=</span> (current_index<span style="color:#
 </code></pre></div><p>Much like linear probing, the first part of this algorithm proceeds in a fixed manner (<code>current_index*5+1</code>). Python core developers found it to be good in common cases where hash keys are consecutive. The other part of this algorithm is what makes it random - The <code>perturb</code> variable depends on the actual bits of the hash, and as you&rsquo;ve seen before - They are well distributed and not often the same even for similar keys.</p>
 <h3 id="deleting-elements-using-dummy-values">Deleting Elements Using Dummy Values</h3>
 <p>In a perfect world with no collisions, deleting elements would be simple: just remove the element at the desired index so it can be refilled with other values. Unfortunately, we do not live in a perfect world, and collisions happen frequently. Remember the open addressing example from before?</p>
-<p>{% img &lsquo;python-hash-tables-open-addressing&rsquo; centered=True %}</p>
+
+<figure class="white-img-div" >
+    
+        <img class="center" src="/images/open-addressing.png"
+             />
+        
+    
+</figure>
+
 <p>Now assume you wanted to delete <em>John Smith</em> from the table. Seems trivial, right? Hash <em>John Smith</em> and delete the element located at the calculated index. Now, you might have already noticed the problem in this approach. After deleting <em>John</em>, <em>Sandra</em> is unreachable! Hashing <em>Sandra</em> will get us to an empty slot. For this exact reason, Python implements dummy values - Instead of completely erasing <em>John&rsquo;s</em> element, it would place a fixed dummy value there. When the algorithm faces a dummy value, it knows that there was a value there but it got deleted. It then keeps probing forward.</p>
 <h3 id="implementing-everything-with-python">Implementing Everything With Python</h3>
 <p>Now that you know what hash tables are, how the Python hash function works and how Python handles collisions, it&rsquo;s time to see these things in action by exploring the implementation of a dictionary and the lookup method. The lookup method is used in all operations: search, insertion and deletion.</p>
 <p>First thing you need to know is that Python <a href="https://github.com/python/cpython/blob/master/Objects/dictobject.c#L104">initializes a dict with an 8 element array</a>. Experiments showed that this size suffices for most common dicts, usually created to pass keyword arguments. Each element in the array holds a <a href="https://github.com/python/cpython/blob/e42b705188271da108de42b55d9344642170aa2b/Objects/dict-common.h#L4">structure</a> that contains the key, value and the hash. The hash is stored in order to not recompute it with each increase in the size of the dictionary (further explained in <em>Exploring Python Hash Tables Optimizations: Dictionary Resize</em>).</p>
-<p>{% alert %}</p>
-<p><strong>Note:</strong> Up until now, memory indices were displayed as decimal values. From this point onward, you will notice that memory addresses will be displayed as binary integers. Don&rsquo;t be scared! You can continue reading even if you&rsquo;re not familiar with them - I only use it for you to better understand how Python hash tables work with bits, but it&rsquo;s not mandatory to understand that.</p>
-<p>{% endalert %}</p>
+<div class="toast toast--blue add-margin">
+	<div class="toast__content">
+		<p class="toast__type">Note</p>
+		<p class="toast__message">
+			Up until now, memory indices were displayed as decimal values. From this point onward, you will notice that memory addresses will be displayed as binary integers. Don&rsquo;t be scared! You can continue reading even if you&rsquo;re not familiar with them - I only use it for you to better understand how Python hash tables work with bits, but it&rsquo;s not mandatory to understand that.
+		</p>
+	</div>
+</div>
+
 <p>On to the <a href="https://github.com/python/cpython/blob/master/Objects/dictobject.c#L760">lookup method</a>. Here&rsquo;s a simplified Python version, followed by an explanation:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">DUMMY <span style="color:#f92672">=</span> <span style="color:#f92672">-</span><span style="color:#ae81ff">2</span>
-<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">lookup</span>(key: Any, hash_: int) <span style="color:#f92672">-&gt;</span> Tuple[int, Any]:
-mask <span style="color:#f92672">=</span> len(table) <span style="color:#f92672">-</span> <span style="color:#ae81ff">1</span>
-freeslot <span style="color:#f92672">=</span> None
-<span style="color:#66d9ef">for</span> index <span style="color:#f92672">in</span> generate_probes(hash_, mask):
-    elem <span style="color:#f92672">=</span> table[index]
-    <span style="color:#66d9ef">if</span> elem <span style="color:#f92672">is</span> None:
-        <span style="color:#66d9ef">return</span> (index, None) <span style="color:#66d9ef">if</span> freeslot <span style="color:#f92672">is</span> None <span style="color:#66d9ef">else</span> (freeslot, DUMMY)
-    <span style="color:#66d9ef">elif</span> elem <span style="color:#f92672">==</span> DUMMY:
-        <span style="color:#66d9ef">if</span> freeslot <span style="color:#f92672">is</span> None:
-            freeslot <span style="color:#f92672">=</span> index
-    <span style="color:#66d9ef">elif</span> elem<span style="color:#f92672">.</span>key <span style="color:#f92672">is</span> key <span style="color:#f92672">or</span> (elem<span style="color:#f92672">.</span>hash <span style="color:#f92672">==</span> hash_ <span style="color:#f92672">and</span> elem<span style="color:#f92672">.</span>key <span style="color:#f92672">==</span> key):
-        <span style="color:#66d9ef">return</span> (index, elem)
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 1</span>    DUMMY <span style="color:#f92672">=</span> <span style="color:#f92672">-</span><span style="color:#ae81ff">2</span>
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 2</span>    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">lookup</span>(key: Any, hash_: int) <span style="color:#f92672">-&gt;</span> Tuple[int, Any]:
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 3</span>    mask <span style="color:#f92672">=</span> len(table) <span style="color:#f92672">-</span> <span style="color:#ae81ff">1</span>
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 4</span>    freeslot <span style="color:#f92672">=</span> None
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 5</span>    <span style="color:#66d9ef">for</span> index <span style="color:#f92672">in</span> generate_probes(hash_, mask):
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 6</span>        elem <span style="color:#f92672">=</span> table[index]
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 7</span>        <span style="color:#66d9ef">if</span> elem <span style="color:#f92672">is</span> None:
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 8</span>            <span style="color:#66d9ef">return</span> (index, None) <span style="color:#66d9ef">if</span> freeslot <span style="color:#f92672">is</span> None <span style="color:#66d9ef">else</span> (freeslot, DUMMY)
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 9</span>        <span style="color:#66d9ef">elif</span> elem <span style="color:#f92672">==</span> DUMMY:
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">10</span>            <span style="color:#66d9ef">if</span> freeslot <span style="color:#f92672">is</span> None:
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">11</span>                freeslot <span style="color:#f92672">=</span> index
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">12</span>        <span style="color:#66d9ef">elif</span> elem<span style="color:#f92672">.</span>key <span style="color:#f92672">is</span> key <span style="color:#f92672">or</span> (elem<span style="color:#f92672">.</span>hash <span style="color:#f92672">==</span> hash_ <span style="color:#f92672">and</span> elem<span style="color:#f92672">.</span>key <span style="color:#f92672">==</span> key):
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">13</span>            <span style="color:#66d9ef">return</span> (index, elem)
 </code></pre></div><ul>
 <li>
 <p><strong>Line 5</strong> calculates the index with the <code>generate_probes</code> method shown in the next code block below.</p>
@@ -303,101 +382,115 @@ freeslot <span style="color:#f92672">=</span> None
 </li>
 <li>
 <p><strong>Line 12</strong> compares the identities of the keys. If they are the same object, the index is returned.</p>
+<p>If not, it compares the key value <strong>and the hash</strong>. As it is known, equal objects should have equal hashes, which means that objects with different hashes are not equal. If both are equal, the index is returned.</p>
+</li>
+<li>
+<p>If the desired element hasn&rsquo;t been found yet (remember that the slot wasn&rsquo;t empty/dummy), this is a hash collision situation - In which the script goes back to the <code>generate_probes</code> method to compute the random new hash and then go back to the first step.</p>
 </li>
 </ul>
-<p>If not, it compares the key value <strong>and the hash</strong>. As it is known, equal objects should have equal hashes, which means that objects with different hashes are not equal. If both are equal, the index is returned.</p>
-<ul>
-<li>If the desired element hasn&rsquo;t been found yet (remember that the slot wasn&rsquo;t empty/dummy), this is a hash collision situation - In which the script goes back to the <code>generate_probes</code> method to compute the random new hash and then go back to the first step.</li>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">1</span>    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">generate_probes</span>(hash_: int, mask: int) <span style="color:#f92672">-&gt;</span> Iterable[int]:
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">2</span>        index <span style="color:#f92672">=</span> hash_ <span style="color:#f92672">&amp;</span> mask
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">3</span>        <span style="color:#66d9ef">yield</span> index
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">4</span>        perturb <span style="color:#f92672">=</span> hash_
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">5</span>        <span style="color:#66d9ef">while</span> True:
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">6</span>            new_hash <span style="color:#f92672">=</span> index <span style="color:#f92672">*</span> <span style="color:#ae81ff">5</span> <span style="color:#f92672">+</span> <span style="color:#ae81ff">1</span> <span style="color:#f92672">+</span> perturb
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">7</span>            <span style="color:#66d9ef">yield</span> new_hash <span style="color:#f92672">&amp;</span> mask
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">8</span>            perturb <span style="color:#f92672">&gt;&gt;=</span> <span style="color:#ae81ff">5</span>
+</code></pre></div><ul>
+<li><strong>Line 3</strong> masks the hash bits with the size of the table minus one - For example, in a table with the size of 8, the last 3 bits would be taken (111 in binary equals 7 in decimal, so 3 bits can represent 0-7). The following demonstration shows a hash example with its last 3 bits taken for indexing:</li>
 </ul>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#66d9ef">def</span> <span style="color:#a6e22e">generate_probes</span>(hash_: int, mask: int) <span style="color:#f92672">-&gt;</span> Iterable[int]:
-    index <span style="color:#f92672">=</span> hash_ <span style="color:#f92672">&amp;</span> mask
-    <span style="color:#66d9ef">yield</span> index
-    perturb <span style="color:#f92672">=</span> hash_
-    <span style="color:#66d9ef">while</span> True:
-        new_hash <span style="color:#f92672">=</span> index <span style="color:#f92672">*</span> <span style="color:#ae81ff">5</span> <span style="color:#f92672">+</span> <span style="color:#ae81ff">1</span> <span style="color:#f92672">+</span> perturb
-        <span style="color:#66d9ef">yield</span> new_hash <span style="color:#f92672">&amp;</span> mask
-        perturb <span style="color:#f92672">&gt;&gt;=</span> <span style="color:#ae81ff">5</span>
-</code></pre></div><pre><code>- **Line 3** masks the hash bits with the size of the table minus one - For example, in a table with the size of 8, the last 3 bits would be taken (111 in binary equals 7 in decimal, so 3 bits can represent 0-7). The following demonstration shows a hash example with its last 3 bits taken for indexing:
 
-{% img 'python-hash-tables-last-3-bits' centered=True %}
+<figure class="white-img-div" >
+    
+        <img class="center" src="/images/last_3_bits.png"
+             />
+        
+    
+</figure>
 
-- **Line 7**: Remember that the algorithm goes back to the `generate_probes` method if the desired wasn't found? This is the line that it goes back to. It computes the new hash using a random probe and yields control back to the `lookup` method.
+<ul>
+<li><strong>Line 7</strong>: Remember that the algorithm goes back to the <code>generate_probes</code> method if the desired wasn&rsquo;t found? This is the line that it goes back to. It computes the new hash using a random probe and yields control back to the <code>lookup</code> method.</li>
+</ul>
+<p>If you were to write the search operation, it would have looked along the lines of the following:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">1</span>    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">search</span>(key: Any) <span style="color:#f92672">-&gt;</span> Any:  <span style="color:#75715e"># usually implemented as __getitem__</span>
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">2</span>    hashvalue <span style="color:#f92672">=</span> hash(key)
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">3</span>    index, elem <span style="color:#f92672">=</span> lookup(key, hashvalue)
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">4</span>    <span style="color:#66d9ef">if</span> elem <span style="color:#f92672">is</span> None <span style="color:#f92672">or</span> elem <span style="color:#f92672">==</span> DUMMY:
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">5</span>        <span style="color:#66d9ef">raise</span> <span style="color:#a6e22e">KeyError</span>(key)
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">6</span>    <span style="color:#66d9ef">return</span> table[index]
+</code></pre></div><p>As I&rsquo;ve mentioned before, the <code>DUMMY</code> and <code>None</code> handling is done within the caller - while this specific method raises a <code>KeyError</code>, other operations could have still used that index as you will soon see.</p>
+<div class="toast add-margin">
+	<div class="toast__content">
+		<p class="toast__type">Comprehension Check</p>
+		<p class="toast__message dark-text">
+			Would the insertion operation use the index received from the lookup method even if the element is <code>None</code> or <code>DUMMY</code>?
+		</p>
+		<div class="toggle-solution" id="dummy">Show Solution</div>
+		<div class="solution dark-text" id="solution-dummy">
+			Yes! The insertion method would be happy to receive an empty slot - It means that no hash collisions were involved in the process.
+		</div>
+	</div>
+</div>
 
-If you were to write the search operation, it would have looked along the lines of the following:
-
-```python
-def search(key: Any) -&gt; Any:  # usually implemented as __getitem__
-    hashvalue = hash(key)
-    index, elem = lookup(key, hashvalue)
-    if elem is None or elem == DUMMY:
-        raise KeyError(key)
-    return table[index]
-</code></pre><p>As I&rsquo;ve mentioned before, the <code>DUMMY</code> and <code>None</code> handling is done within the caller - while this specific method raises a <code>KeyError</code>, other operations could have still used that index as you will soon see.</p>
-<p>{% exercise &ldquo;Comprehension Check&rdquo; %}</p>
-<p>Would the insertion operation use the index received from the lookup method even if the element is <code>None</code> or <code>DUMMY</code>?</p>
-<p>{% endexercise %}</p>
-<p>{% solution &ldquo;Comprehension Check&rdquo; %}</p>
-<p>Yes! The insertion method would be happy to receive an empty slot - It means that no hash collisions were involved in the process.</p>
-<p>{% endsolution %}</p>
 <h3 id="understanding-python-sets">Understanding Python Sets</h3>
-<p>Along with dictionaries, Python hash tables also serve as the underlying structure for sets. Both implementations are quite similar as can be seen in the <a href="https://github.com/python/cpython/blob/master/Objects/setobject.c">source code</a>, with the exception that sets do not store a value for each key, meaning the optimizations of Python, which are shown later in this article, are not applicable for them. The usage of hash tables for sets make the lookup operation, which is used frequently in sets in order to keep them without duplicates, quite fast (as you should know by now - It always depends on the collisions).</p>
+<p>Along with dictionaries, Python hash tables also serve as the underlying structure for sets. Both implementations are quite similar as can be seen in the <a href="https://github.com/python/cpython/blob/master/Objects/setobject.c">source code</a>, with the exception that sets do not store a value for each key, meaning the optimizations of Python, which are shown <a href="#exploring-python-hash-tables-optimizations">later</a> in this article, are not applicable for them. The usage of hash tables for sets make the lookup operation, which is used frequently in sets in order to keep them without duplicates, quite fast (as you should know by now - It always depends on the collisions).</p>
 <h2 id="exploring-python-hash-tables-optimizations">Exploring Python Hash Tables Optimizations</h2>
 <p>The methods above are not entirely identical to Python&rsquo;s. I didn&rsquo;t want to overcomplicate things, so I&rsquo;ve left out some details that make the Python dictionary blazing fast. The following section will guide you through building a custom dictionary, implementing the optimizations of Python hash tables.</p>
 <p>Your first step would be to create a <code>Dictionary</code> class:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Dictionary</span>:
-
-    <span style="color:#66d9ef">def</span> __init__(self, <span style="color:#f92672">*</span>args, <span style="color:#f92672">**</span>kwargs):
-        <span style="color:#e6db74">&#34;&#34;&#34;Dict initializiation&#34;&#34;&#34;</span>
-
-    <span style="color:#a6e22e">@staticmethod</span>
-    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">_generate_probes</span>(hash_: int, mask: int) <span style="color:#f92672">-&gt;</span> Iterable[int]:
-        index <span style="color:#f92672">=</span> hash_ <span style="color:#f92672">&amp;</span> mask
-        <span style="color:#66d9ef">yield</span> index
-        perturb <span style="color:#f92672">=</span> hash_
-        <span style="color:#66d9ef">while</span> True:
-            new_hash <span style="color:#f92672">=</span> index <span style="color:#f92672">*</span> <span style="color:#ae81ff">5</span> <span style="color:#f92672">+</span> <span style="color:#ae81ff">1</span> <span style="color:#f92672">+</span> perturb
-            <span style="color:#66d9ef">yield</span> new_hash <span style="color:#f92672">&amp;</span> mask
-            perturb <span style="color:#f92672">&gt;&gt;=</span> <span style="color:#ae81ff">5</span>
-
-    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">_lookup</span>(self, key: Any, hashvalue: int) <span style="color:#f92672">-&gt;</span> Tuple[int, Any]:
-        <span style="color:#e6db74">&#34;&#34;&#34;The lookup method&#34;&#34;&#34;</span>
-
-    <span style="color:#66d9ef">def</span> __getitem__(self, key: Any) <span style="color:#f92672">-&gt;</span> Any:
-        <span style="color:#e6db74">&#34;&#34;&#34;Get value from dict&#34;&#34;&#34;</span>
-
-    <span style="color:#66d9ef">def</span> __setitem__(self, key: Any, value: Any):
-        <span style="color:#e6db74">&#34;&#34;&#34;Insert item to dict&#34;&#34;&#34;</span>
-
-    <span style="color:#66d9ef">def</span> __delitem__(self, key: Any):
-        <span style="color:#e6db74">&#34;&#34;&#34;Delete item from dict&#34;&#34;&#34;</span>
-
-    <span style="color:#66d9ef">def</span> __len__(self) <span style="color:#f92672">-&gt;</span> int:
-        <span style="color:#e6db74">&#34;&#34;&#34;Dict length&#34;&#34;&#34;</span>
-
-    <span style="color:#66d9ef">def</span> __iter__(self) <span style="color:#f92672">-&gt;</span> Iterable:
-        <span style="color:#e6db74">&#34;&#34;&#34;Iterate through dictionary&#34;&#34;&#34;</span>
-
-    <span style="color:#66d9ef">def</span> __contains__(self, key: Any) <span style="color:#f92672">-&gt;</span> bool:
-        <span style="color:#e6db74">&#34;&#34;&#34;Check if dictionary contains a key&#34;&#34;&#34;</span>
-
-    <span style="color:#66d9ef">def</span> __repr__(self) <span style="color:#f92672">-&gt;</span> str:
-        <span style="color:#e6db74">&#34;&#34;&#34;Dict representation&#34;&#34;&#34;</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 1</span>    <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Dictionary</span>:
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 2</span>
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 3</span>        <span style="color:#66d9ef">def</span> __init__(self, <span style="color:#f92672">*</span>args, <span style="color:#f92672">**</span>kwargs):
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 4</span>            <span style="color:#e6db74">&#34;&#34;&#34;Dict initializiation&#34;&#34;&#34;</span>
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 5</span>
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 6</span>        <span style="color:#a6e22e">@staticmethod</span>
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 7</span>        <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">_generate_probes</span>(hash_: int, mask: int) <span style="color:#f92672">-&gt;</span> Iterable[int]:
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 8</span>            index <span style="color:#f92672">=</span> hash_ <span style="color:#f92672">&amp;</span> mask
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 9</span>            <span style="color:#66d9ef">yield</span> index
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">10</span>            perturb <span style="color:#f92672">=</span> hash_
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">11</span>            <span style="color:#66d9ef">while</span> True:
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">12</span>                new_hash <span style="color:#f92672">=</span> index <span style="color:#f92672">*</span> <span style="color:#ae81ff">5</span> <span style="color:#f92672">+</span> <span style="color:#ae81ff">1</span> <span style="color:#f92672">+</span> perturb
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">13</span>                <span style="color:#66d9ef">yield</span> new_hash <span style="color:#f92672">&amp;</span> mask
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">14</span>                perturb <span style="color:#f92672">&gt;&gt;=</span> <span style="color:#ae81ff">5</span>
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">15</span>
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">16</span>        <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">_lookup</span>(self, key: Any, hashvalue: int) <span style="color:#f92672">-&gt;</span> Tuple[int, Any]:
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">17</span>            <span style="color:#e6db74">&#34;&#34;&#34;The lookup method&#34;&#34;&#34;</span>
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">18</span>
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">19</span>        <span style="color:#66d9ef">def</span> __getitem__(self, key: Any) <span style="color:#f92672">-&gt;</span> Any:
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">20</span>            <span style="color:#e6db74">&#34;&#34;&#34;Get value from dict&#34;&#34;&#34;</span>
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">21</span>
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">22</span>        <span style="color:#66d9ef">def</span> __setitem__(self, key: Any, value: Any):
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">23</span>            <span style="color:#e6db74">&#34;&#34;&#34;Insert item to dict&#34;&#34;&#34;</span>
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">24</span>
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">25</span>        <span style="color:#66d9ef">def</span> __delitem__(self, key: Any):
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">26</span>            <span style="color:#e6db74">&#34;&#34;&#34;Delete item from dict&#34;&#34;&#34;</span>
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">27</span>
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">28</span>        <span style="color:#66d9ef">def</span> __len__(self) <span style="color:#f92672">-&gt;</span> int:
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">29</span>            <span style="color:#e6db74">&#34;&#34;&#34;Dict length&#34;&#34;&#34;</span>
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">30</span>
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">31</span>        <span style="color:#66d9ef">def</span> __iter__(self) <span style="color:#f92672">-&gt;</span> Iterable:
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">32</span>            <span style="color:#e6db74">&#34;&#34;&#34;Iterate through dictionary&#34;&#34;&#34;</span>
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">33</span>
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">34</span>        <span style="color:#66d9ef">def</span> __contains__(self, key: Any) <span style="color:#f92672">-&gt;</span> bool:
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">35</span>            <span style="color:#e6db74">&#34;&#34;&#34;Check if dictionary contains a key&#34;&#34;&#34;</span>
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">36</span>
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">37</span>        <span style="color:#66d9ef">def</span> __repr__(self) <span style="color:#f92672">-&gt;</span> str:
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">38</span>            <span style="color:#e6db74">&#34;&#34;&#34;Dict representation&#34;&#34;&#34;</span>
 </code></pre></div><p>You will soon fill up these methods. Notice that <code>generate_probes</code> is now a static method - No reason for it to be an instance method since it does not use any instance attributes. <code>lookup</code> and <code>search</code> from before are not used since they both will change quite a bit.</p>
 <p>Let&rsquo;s dive into Python hash tables optimizations!</p>
 <h3 id="compact-dictionaries">Compact Dictionaries</h3>
 <p>Compact dictionaries optimize the space that hash tables occupy. Before they were implemented, Python has had sparse hash tables - Each unoccupied slot took as much space as an occupied slot because it had to save space for the key, hash and value. Compact dictionaries introduced a much smaller table just for indices, and a separate table for the keys, values and hashes. This way, the indices table could be the sparse one while the bigger table is dense.</p>
 <p>For example, before compact dictionaries, the following is how a dictionary and its corresponding memory array looked like (<a href="https://mail.python.org/pipermail/python-dev/2012-December/123028.html">taken from Raymond Hettinger&rsquo;s text</a>):</p>
-<pre><code>d = {'timmy': 'red', 'barry': 'green', 'guido': 'blue'}
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">d <span style="color:#f92672">=</span> {<span style="color:#e6db74">&#39;timmy&#39;</span>: <span style="color:#e6db74">&#39;red&#39;</span>, <span style="color:#e6db74">&#39;barry&#39;</span>: <span style="color:#e6db74">&#39;green&#39;</span>, <span style="color:#e6db74">&#39;guido&#39;</span>: <span style="color:#e6db74">&#39;blue&#39;</span>}
 
-[['---', '---', '---'],
-    [-8522787127447073495, 'barry', 'green'],
-    ['---', '---', '---'],
-    ['---', '---', '---'],
-    ['---', '---', '---'],
-    [-9092791511155847987, 'timmy', 'red'],
-    ['---', '---', '---'],
-    [-6480567542315338377, 'guido', 'blue']]
-</code></pre><p>Instead, with compact dictionaries, two different tables are built:</p>
+[[<span style="color:#e6db74">&#39;---&#39;</span>, <span style="color:#e6db74">&#39;---&#39;</span>, <span style="color:#e6db74">&#39;---&#39;</span>],
+    [<span style="color:#f92672">-</span><span style="color:#ae81ff">8522787127447073495</span>, <span style="color:#e6db74">&#39;barry&#39;</span>, <span style="color:#e6db74">&#39;green&#39;</span>],
+    [<span style="color:#e6db74">&#39;---&#39;</span>, <span style="color:#e6db74">&#39;---&#39;</span>, <span style="color:#e6db74">&#39;---&#39;</span>],
+    [<span style="color:#e6db74">&#39;---&#39;</span>, <span style="color:#e6db74">&#39;---&#39;</span>, <span style="color:#e6db74">&#39;---&#39;</span>],
+    [<span style="color:#e6db74">&#39;---&#39;</span>, <span style="color:#e6db74">&#39;---&#39;</span>, <span style="color:#e6db74">&#39;---&#39;</span>],
+    [<span style="color:#f92672">-</span><span style="color:#ae81ff">9092791511155847987</span>, <span style="color:#e6db74">&#39;timmy&#39;</span>, <span style="color:#e6db74">&#39;red&#39;</span>],
+    [<span style="color:#e6db74">&#39;---&#39;</span>, <span style="color:#e6db74">&#39;---&#39;</span>, <span style="color:#e6db74">&#39;---&#39;</span>],
+    [<span style="color:#f92672">-</span><span style="color:#ae81ff">6480567542315338377</span>, <span style="color:#e6db74">&#39;guido&#39;</span>, <span style="color:#e6db74">&#39;blue&#39;</span>]]
+</code></pre></div><p>Instead, with compact dictionaries, two different tables are built:</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">[None, <span style="color:#ae81ff">1</span>, None, None, None, <span style="color:#ae81ff">0</span>, None, <span style="color:#ae81ff">2</span>]
 
 [[<span style="color:#f92672">-</span><span style="color:#ae81ff">9092791511155847987</span>, <span style="color:#e6db74">&#39;timmy&#39;</span>, <span style="color:#e6db74">&#39;red&#39;</span>],
@@ -476,26 +569,26 @@ def search(key: Any) -&gt; Any:  # usually implemented as __getitem__
 </tr>
 </tbody>
 </table>
-<p>In order to implement this feature in your custom dictionary, the dictionary needs to implement two separates arrays: one for the indices and one for the actual entries. Before you do that, there are other optimizations to consider, therefore the final implementation will take place soon, in <em>Putting it All Together</em>.</p>
+<p>In order to implement this feature in your custom dictionary, the dictionary needs to implement two separates arrays: one for the indices and one for the actual entries. Before you do that, there are other optimizations to consider, therefore the final implementation will take place soon, in <a href="#putting-it-all-together"><em>Putting it All Together</em></a>.</p>
 <p>Meanwhile, you can create the method that builds the indices array, and initialize the class with <code>indices</code>, <code>filled</code> and <code>used</code> variables:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">FREE <span style="color:#f92672">=</span> <span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>
-DUMMY <span style="color:#f92672">=</span> <span style="color:#f92672">-</span><span style="color:#ae81ff">2</span>
-
-<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Dictionary</span>:
-    <span style="color:#66d9ef">def</span> __init__(self, <span style="color:#f92672">*</span>args, <span style="color:#f92672">**</span>kwargs):
-        self<span style="color:#f92672">.</span>indices <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>_make_index_array(<span style="color:#ae81ff">8</span>)  <span style="color:#75715e"># Init with an 8 elements table</span>
-        self<span style="color:#f92672">.</span>used <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>  <span style="color:#75715e"># Number of items in the dictionary</span>
-        self<span style="color:#f92672">.</span>filled <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>  <span style="color:#75715e"># Number of non-empty slots including dummy slots</span>
-
-    <span style="color:#a6e22e">@staticmethod</span>
-    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">_make_index_array</span>(n: int) <span style="color:#f92672">-&gt;</span> Union[list, array<span style="color:#f92672">.</span>array]:
-        <span style="color:#66d9ef">if</span> n <span style="color:#f92672">&lt;=</span> <span style="color:#ae81ff">2</span> <span style="color:#f92672">**</span> <span style="color:#ae81ff">7</span>:
-            <span style="color:#66d9ef">return</span> array<span style="color:#f92672">.</span>array(<span style="color:#e6db74">&#34;b&#34;</span>, [FREE]) <span style="color:#f92672">*</span> n  <span style="color:#75715e"># signed char</span>
-        <span style="color:#66d9ef">if</span> n <span style="color:#f92672">&lt;=</span> <span style="color:#ae81ff">2</span> <span style="color:#f92672">**</span> <span style="color:#ae81ff">15</span>:
-            <span style="color:#66d9ef">return</span> array<span style="color:#f92672">.</span>array(<span style="color:#e6db74">&#34;h&#34;</span>, [FREE]) <span style="color:#f92672">*</span> n  <span style="color:#75715e"># signed short</span>
-        <span style="color:#66d9ef">if</span> n <span style="color:#f92672">&lt;=</span> <span style="color:#ae81ff">2</span> <span style="color:#f92672">**</span> <span style="color:#ae81ff">31</span>:
-            <span style="color:#66d9ef">return</span> array<span style="color:#f92672">.</span>array(<span style="color:#e6db74">&#34;l&#34;</span>, [FREE]) <span style="color:#f92672">*</span> n  <span style="color:#75715e"># signed long</span>
-        <span style="color:#66d9ef">return</span> [FREE] <span style="color:#f92672">*</span> n
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 1</span>    FREE <span style="color:#f92672">=</span> <span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 2</span>    DUMMY <span style="color:#f92672">=</span> <span style="color:#f92672">-</span><span style="color:#ae81ff">2</span>
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 3</span>
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 4</span>    <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Dictionary</span>:
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 5</span>        <span style="color:#66d9ef">def</span> __init__(self, <span style="color:#f92672">*</span>args, <span style="color:#f92672">**</span>kwargs):
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 6</span>            self<span style="color:#f92672">.</span>indices <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>_make_index_array(<span style="color:#ae81ff">8</span>)  <span style="color:#75715e"># Init with an 8 elements table</span>
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 7</span>            self<span style="color:#f92672">.</span>used <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>  <span style="color:#75715e"># Number of items in the dictionary</span>
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 8</span>            self<span style="color:#f92672">.</span>filled <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>  <span style="color:#75715e"># Number of non-empty slots including dummy slots</span>
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 9</span>
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">10</span>        <span style="color:#a6e22e">@staticmethod</span>
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">11</span>        <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">_make_index_array</span>(n: int) <span style="color:#f92672">-&gt;</span> Union[list, array<span style="color:#f92672">.</span>array]:
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">12</span>            <span style="color:#66d9ef">if</span> n <span style="color:#f92672">&lt;=</span> <span style="color:#ae81ff">2</span> <span style="color:#f92672">**</span> <span style="color:#ae81ff">7</span>:
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">13</span>                <span style="color:#66d9ef">return</span> array<span style="color:#f92672">.</span>array(<span style="color:#e6db74">&#34;b&#34;</span>, [FREE]) <span style="color:#f92672">*</span> n  <span style="color:#75715e"># signed char</span>
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">14</span>            <span style="color:#66d9ef">if</span> n <span style="color:#f92672">&lt;=</span> <span style="color:#ae81ff">2</span> <span style="color:#f92672">**</span> <span style="color:#ae81ff">15</span>:
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">15</span>                <span style="color:#66d9ef">return</span> array<span style="color:#f92672">.</span>array(<span style="color:#e6db74">&#34;h&#34;</span>, [FREE]) <span style="color:#f92672">*</span> n  <span style="color:#75715e"># signed short</span>
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">16</span>            <span style="color:#66d9ef">if</span> n <span style="color:#f92672">&lt;=</span> <span style="color:#ae81ff">2</span> <span style="color:#f92672">**</span> <span style="color:#ae81ff">31</span>:
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">17</span>                <span style="color:#66d9ef">return</span> array<span style="color:#f92672">.</span>array(<span style="color:#e6db74">&#34;l&#34;</span>, [FREE]) <span style="color:#f92672">*</span> n  <span style="color:#75715e"># signed long</span>
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">18</span>            <span style="color:#66d9ef">return</span> [FREE] <span style="color:#f92672">*</span> n
 </code></pre></div><ul>
 <li>
 <p>The indices array is of a single type, therefore <code>DUMMY</code> and <code>FREE</code> should be of the same type.</p>
@@ -510,62 +603,76 @@ DUMMY <span style="color:#f92672">=</span> <span style="color:#f92672">-</span><
 <p><code>_make_index_array</code> uses the <a href="https://docs.python.org/3/library/array.html">array</a> module in order to compactly represent an array of basic values. It follows the <a href="https://github.com/python/cpython/blob/eb8ac57af26c4eb96a8230eba7492ce5ceef7886/Objects/dictobject.c#L37">logic of Python source code</a> in order to determine the size of the indices.</p>
 </li>
 </ul>
-<p>{% alert %}</p>
-<p><strong>Note:</strong> Compact dictionaries were implemented in Python 3.6.</p>
-<p>{% endalert %}</p>
+<div class="toast toast--blue add-margin">
+	<div class="toast__content">
+		<p class="toast__type">Note</p>
+		<p class="toast__message">
+			Compact dictionaries were implemented in Python 3.6.
+		</p>
+	</div>
+</div>
+
 <h3 id="key-sharing-dictionaries">Key Sharing Dictionaries</h3>
 <p>Python 3.3 <a href="https://www.python.org/dev/peps/pep-0412/">introduced</a> key-sharing dictionaries. When dictionaries are created to fill the <strong>dict</strong> slot of an object, they are created in split form. The keys table is cached in the type, potentially allowing all attribute dictionaries of instances of one class to share keys. This behaviour happens in the <code>__init__</code> method of classes, and aims to save memory space and to improve speed of object creation. Your takeaway from this should be to always strive to assign attributes in the <code>__init_</code> method so your custom classes can use key-sharing dictionaries.</p>
 <p>The following visual demonstrates three instances of the same class:</p>
-<p>{% img &lsquo;python-hash-tables-shared-keys&rsquo; centered=True %}</p>
+
+<figure class="white-img-div" >
+    
+        <img class="center" src="/images/shared-keys.png"
+             />
+        
+    
+</figure>
+
 <p>You can see that each instance only holds its values, while there is a single, shared place in memory for the keys.</p>
 <p>Let&rsquo;s implement this awesome feature in your dictionary:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#66d9ef">class</span> <span style="color:#a6e22e">DictKey</span>:
-    __slots__ <span style="color:#f92672">=</span> [<span style="color:#e6db74">&#34;key&#34;</span>, <span style="color:#e6db74">&#34;hashvalue&#34;</span>]  <span style="color:#75715e"># does not need a __dict__</span>
-
-    <span style="color:#66d9ef">def</span> __init__(self, key, hashvalue):
-        self<span style="color:#f92672">.</span>key <span style="color:#f92672">=</span> key
-        self<span style="color:#f92672">.</span>hashvalue <span style="color:#f92672">=</span> hashvalue
-
-    <span style="color:#66d9ef">def</span> __repr__(self):
-        <span style="color:#66d9ef">return</span> f<span style="color:#e6db74">&#34;&lt;DictKey {self.key}&gt;&#34;</span>
-
-<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Dictionary</span>:
-
-    <span style="color:#66d9ef">def</span> __init__(self, <span style="color:#f92672">*</span>args, <span style="color:#f92672">**</span>kwargs):
-        self<span style="color:#f92672">.</span>indices <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>_make_index_array(<span style="color:#ae81ff">8</span>)  <span style="color:#75715e"># init with an 8 elements table</span>
-        self<span style="color:#f92672">.</span>keys: List[DictKey] <span style="color:#f92672">=</span> []
-        self<span style="color:#f92672">.</span>values: List[Any] <span style="color:#f92672">=</span> []
-        self<span style="color:#f92672">.</span>used <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>  <span style="color:#75715e"># number of items in the dictionary</span>
-        self<span style="color:#f92672">.</span>filled <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>  <span style="color:#75715e"># number of non-empty slots including dummy slots</span>
-        self<span style="color:#f92672">.</span>update(<span style="color:#f92672">*</span>args, <span style="color:#f92672">**</span>kwargs)
-
-    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">update</span>(self, other<span style="color:#f92672">=</span>(), <span style="color:#f92672">/</span>, <span style="color:#f92672">**</span>kwargs):
-        self<span style="color:#f92672">.</span>_sharing_keys <span style="color:#f92672">=</span> False
-        <span style="color:#66d9ef">if</span> isinstance(other, Dictionary):
-            <span style="color:#66d9ef">if</span> self<span style="color:#f92672">.</span>used <span style="color:#f92672">&gt;</span> <span style="color:#ae81ff">0</span>:
-                <span style="color:#66d9ef">for</span> key <span style="color:#f92672">in</span> other:
-                    self[key] <span style="color:#f92672">=</span> other[key]
-            <span style="color:#66d9ef">else</span>:
-                self<span style="color:#f92672">.</span>_sharing_keys <span style="color:#f92672">=</span> True
-                self<span style="color:#f92672">.</span>indices <span style="color:#f92672">=</span> copy<span style="color:#f92672">.</span>copy(other<span style="color:#f92672">.</span>indices)
-                self<span style="color:#f92672">.</span>keys <span style="color:#f92672">=</span> other<span style="color:#f92672">.</span>keys
-                self<span style="color:#f92672">.</span>values <span style="color:#f92672">=</span> [None] <span style="color:#f92672">*</span> len(other<span style="color:#f92672">.</span>values)
-                self<span style="color:#f92672">.</span>used <span style="color:#f92672">=</span> other<span style="color:#f92672">.</span>used
-                self<span style="color:#f92672">.</span>filled <span style="color:#f92672">=</span> other<span style="color:#f92672">.</span>filled
-        <span style="color:#66d9ef">elif</span> hasattr(other, <span style="color:#e6db74">&#34;keys&#34;</span>):
-            <span style="color:#66d9ef">for</span> key <span style="color:#f92672">in</span> other<span style="color:#f92672">.</span>keys():
-                self[key] <span style="color:#f92672">=</span> other[key]
-        <span style="color:#66d9ef">else</span>:
-            <span style="color:#66d9ef">for</span> key, value <span style="color:#f92672">in</span> other:
-                self[key] <span style="color:#f92672">=</span> value
-        <span style="color:#66d9ef">for</span> key, value <span style="color:#f92672">in</span> kwargs<span style="color:#f92672">.</span>items():
-            self[key] <span style="color:#f92672">=</span> value
-
-    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">_check_keys_sharing</span>(self):
-        <span style="color:#e6db74">&#34;&#34;&#34;if trying to change dictionary with shared keys,
-</span><span style="color:#e6db74">        migrate to non shared dictionary&#34;&#34;&#34;</span>
-        <span style="color:#66d9ef">if</span> self<span style="color:#f92672">.</span>_sharing_keys:
-            self<span style="color:#f92672">.</span>keys <span style="color:#f92672">=</span> copy<span style="color:#f92672">.</span>copy(self<span style="color:#f92672">.</span>keys)
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 1</span>    <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">DictKey</span>:
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 2</span>        __slots__ <span style="color:#f92672">=</span> [<span style="color:#e6db74">&#34;key&#34;</span>, <span style="color:#e6db74">&#34;hashvalue&#34;</span>]  <span style="color:#75715e"># does not need a __dict__</span>
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 3</span>
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 4</span>        <span style="color:#66d9ef">def</span> __init__(self, key, hashvalue):
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 5</span>            self<span style="color:#f92672">.</span>key <span style="color:#f92672">=</span> key
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 6</span>            self<span style="color:#f92672">.</span>hashvalue <span style="color:#f92672">=</span> hashvalue
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 7</span>
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 8</span>        <span style="color:#66d9ef">def</span> __repr__(self):
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 9</span>            <span style="color:#66d9ef">return</span> f<span style="color:#e6db74">&#34;&lt;DictKey {self.key}&gt;&#34;</span>
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">10</span>
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">11</span>    <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Dictionary</span>:
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">12</span>
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">13</span>        <span style="color:#66d9ef">def</span> __init__(self, <span style="color:#f92672">*</span>args, <span style="color:#f92672">**</span>kwargs):
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">14</span>            self<span style="color:#f92672">.</span>indices <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>_make_index_array(<span style="color:#ae81ff">8</span>)  <span style="color:#75715e"># init with an 8 elements table</span>
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">15</span>            self<span style="color:#f92672">.</span>keys: List[DictKey] <span style="color:#f92672">=</span> []
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">16</span>            self<span style="color:#f92672">.</span>values: List[Any] <span style="color:#f92672">=</span> []
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">17</span>            self<span style="color:#f92672">.</span>used <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>  <span style="color:#75715e"># number of items in the dictionary</span>
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">18</span>            self<span style="color:#f92672">.</span>filled <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>  <span style="color:#75715e"># number of non-empty slots including dummy slots</span>
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">19</span>            self<span style="color:#f92672">.</span>update(<span style="color:#f92672">*</span>args, <span style="color:#f92672">**</span>kwargs)
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">20</span>
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">21</span>        <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">update</span>(self, other<span style="color:#f92672">=</span>(), <span style="color:#f92672">/</span>, <span style="color:#f92672">**</span>kwargs):
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">22</span>            self<span style="color:#f92672">.</span>_sharing_keys <span style="color:#f92672">=</span> False
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">23</span>            <span style="color:#66d9ef">if</span> isinstance(other, Dictionary):
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">24</span>                <span style="color:#66d9ef">if</span> self<span style="color:#f92672">.</span>used <span style="color:#f92672">&gt;</span> <span style="color:#ae81ff">0</span>:
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">25</span>                    <span style="color:#66d9ef">for</span> key <span style="color:#f92672">in</span> other:
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">26</span>                        self[key] <span style="color:#f92672">=</span> other[key]
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">27</span>                <span style="color:#66d9ef">else</span>:
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">28</span>                    self<span style="color:#f92672">.</span>_sharing_keys <span style="color:#f92672">=</span> True
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">29</span>                    self<span style="color:#f92672">.</span>indices <span style="color:#f92672">=</span> copy<span style="color:#f92672">.</span>copy(other<span style="color:#f92672">.</span>indices)
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">30</span>                    self<span style="color:#f92672">.</span>keys <span style="color:#f92672">=</span> other<span style="color:#f92672">.</span>keys
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">31</span>                    self<span style="color:#f92672">.</span>values <span style="color:#f92672">=</span> [None] <span style="color:#f92672">*</span> len(other<span style="color:#f92672">.</span>values)
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">32</span>                    self<span style="color:#f92672">.</span>used <span style="color:#f92672">=</span> other<span style="color:#f92672">.</span>used
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">33</span>                    self<span style="color:#f92672">.</span>filled <span style="color:#f92672">=</span> other<span style="color:#f92672">.</span>filled
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">34</span>            <span style="color:#66d9ef">elif</span> hasattr(other, <span style="color:#e6db74">&#34;keys&#34;</span>):
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">35</span>                <span style="color:#66d9ef">for</span> key <span style="color:#f92672">in</span> other<span style="color:#f92672">.</span>keys():
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">36</span>                    self[key] <span style="color:#f92672">=</span> other[key]
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">37</span>            <span style="color:#66d9ef">else</span>:
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">38</span>                <span style="color:#66d9ef">for</span> key, value <span style="color:#f92672">in</span> other:
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">39</span>                    self[key] <span style="color:#f92672">=</span> value
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">40</span>            <span style="color:#66d9ef">for</span> key, value <span style="color:#f92672">in</span> kwargs<span style="color:#f92672">.</span>items():
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">41</span>                self[key] <span style="color:#f92672">=</span> value
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">42</span>
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">43</span>        <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">_check_keys_sharing</span>(self):
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">44</span>            <span style="color:#e6db74">&#34;&#34;&#34;if trying to change dictionary with shared keys,
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">45</span><span style="color:#e6db74">            migrate to non shared dictionary&#34;&#34;&#34;</span>
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">46</span>            <span style="color:#66d9ef">if</span> self<span style="color:#f92672">.</span>_sharing_keys:
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">47</span>                self<span style="color:#f92672">.</span>keys <span style="color:#f92672">=</span> copy<span style="color:#f92672">.</span>copy(self<span style="color:#f92672">.</span>keys)
 </code></pre></div><ul>
 <li>
 <p><strong>Line 1</strong> creates a <code>DictKey</code> class which holds a key and its hash value</p>
@@ -598,16 +705,16 @@ DUMMY <span style="color:#f92672">=</span> <span style="color:#f92672">-</span><
 </ul>
 <h3 id="dictionary-resize">Dictionary Resize</h3>
 <p>Python checks for the table size everytime we add a key, and if the table is two-thirds full, it would resize the hash table. If a dictionary has 50000 keys or fewer, the new size is <code>used_size * 4</code>, otherwise, it is <code>used_size * 2</code>. Remember that Python stores the hash value along with the key and the value? This is where it comes in handy! Instead of rehashing the keys when inserting them to the new bigger table, the stored hashes are used. You might wonder - What if the key object was changed? In this case, the hash should be recalculated and the stored value will be incorrect? Such a situation is impossible, since mutable types cannot be keys of a dictionary. Here&rsquo;s how you implement the resize operation:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Dictionary</span>:
-    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">_resize</span>(self, n: int):
-        n <span style="color:#f92672">=</span> <span style="color:#ae81ff">2</span> <span style="color:#f92672">**</span> n<span style="color:#f92672">.</span>bit_length()
-        self<span style="color:#f92672">.</span>indices <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>_make_index_array(n)
-        <span style="color:#66d9ef">for</span> entry_index, dict_key <span style="color:#f92672">in</span> enumerate(self<span style="color:#f92672">.</span>keys):
-            <span style="color:#66d9ef">for</span> i <span style="color:#f92672">in</span> self<span style="color:#f92672">.</span>_generate_probes(dict_key<span style="color:#f92672">.</span>hashvalue, n <span style="color:#f92672">-</span> <span style="color:#ae81ff">1</span>):
-                <span style="color:#66d9ef">if</span> self<span style="color:#f92672">.</span>indices[i] <span style="color:#f92672">==</span> FREE:
-                    <span style="color:#66d9ef">break</span>
-            self<span style="color:#f92672">.</span>indices[i] <span style="color:#f92672">=</span> entry_index
-        self<span style="color:#f92672">.</span>filled <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>used
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 1</span>    <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Dictionary</span>:
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 2</span>        <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">_resize</span>(self, n: int):
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 3</span>            n <span style="color:#f92672">=</span> <span style="color:#ae81ff">2</span> <span style="color:#f92672">**</span> n<span style="color:#f92672">.</span>bit_length()
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 4</span>            self<span style="color:#f92672">.</span>indices <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>_make_index_array(n)
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 5</span>            <span style="color:#66d9ef">for</span> entry_index, dict_key <span style="color:#f92672">in</span> enumerate(self<span style="color:#f92672">.</span>keys):
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 6</span>                <span style="color:#66d9ef">for</span> i <span style="color:#f92672">in</span> self<span style="color:#f92672">.</span>_generate_probes(dict_key<span style="color:#f92672">.</span>hashvalue, n <span style="color:#f92672">-</span> <span style="color:#ae81ff">1</span>):
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 7</span>                    <span style="color:#66d9ef">if</span> self<span style="color:#f92672">.</span>indices[i] <span style="color:#f92672">==</span> FREE:
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 8</span>                        <span style="color:#66d9ef">break</span>
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 9</span>                self<span style="color:#f92672">.</span>indices[i] <span style="color:#f92672">=</span> entry_index
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">10</span>            self<span style="color:#f92672">.</span>filled <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>used
 </code></pre></div><ul>
 <li>
 <p><strong>Line 3</strong>: Python hash table sizes are powers of 2, so we will also use powers of 2. The primary reason Python uses &ldquo;round&rdquo; powers of 2 is efficiency: computing <code>% 2**n</code> can be implemented using bit operations, as you&rsquo;ve seen before.</p>
@@ -624,15 +731,15 @@ DUMMY <span style="color:#f92672">=</span> <span style="color:#f92672">-</span><
 </ul>
 <h3 id="private-dictionary-versions">Private Dictionary Versions</h3>
 <p>Python 3.6 added a new private version to dictionaries, incremented at each dictionary creation and at each dictionary change. The rationale is to skip dictionary lookups if the version does not change, and to use cached values instead. Your implementation can implement a version for each instance, although it won&rsquo;t implement the actual caching of values.</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Dictionary</span>:
-    __version <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>
-
-    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">_increase_version</span>(self):
-        self<span style="color:#f92672">.</span>__version <span style="color:#f92672">=</span> Dictionary<span style="color:#f92672">.</span>__version
-        Dictionary<span style="color:#f92672">.</span>__version <span style="color:#f92672">+=</span> <span style="color:#ae81ff">1</span>
-
-    <span style="color:#66d9ef">def</span> __init__(self, <span style="color:#f92672">*</span>args, <span style="color:#f92672">**</span>kwargs):
-        self<span style="color:#f92672">.</span>_increase_version()
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">1</span>    <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Dictionary</span>:
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">2</span>        __version <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">3</span>
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">4</span>        <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">_increase_version</span>(self):
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">5</span>            self<span style="color:#f92672">.</span>__version <span style="color:#f92672">=</span> Dictionary<span style="color:#f92672">.</span>__version
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">6</span>            Dictionary<span style="color:#f92672">.</span>__version <span style="color:#f92672">+=</span> <span style="color:#ae81ff">1</span>
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">7</span>
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">8</span>        <span style="color:#66d9ef">def</span> __init__(self, <span style="color:#f92672">*</span>args, <span style="color:#f92672">**</span>kwargs):
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">9</span>            self<span style="color:#f92672">.</span>_increase_version()
 </code></pre></div><ul>
 <li>
 <p>The <code>__version</code> variable keeps a counter of the number of dictionary instances, so each instance can have a unique version.</p>
@@ -645,298 +752,132 @@ DUMMY <span style="color:#f92672">=</span> <span style="color:#f92672">-</span><
 </li>
 </ul>
 <h3 id="putting-it-all-together">Putting It All Together</h3>
+<div class="toast toast--blue add-margin">
+	<div class="toast__content">
+		<p class="toast__type">Note</p>
+		<p class="toast__message">
+			The full code can be found <a href="https://github.com/AdamGold/materials/blob/patch-1/python-hash-tables/dict_implementation.py">here</a>.
+		</p>
+	</div>
+</div>
+
 <p>It&rsquo;s time to use all these cool new methods and make your dictionary usable!</p>
-<p>{% collapse &lsquo;Full source code of dictionary_impl.py&rsquo; %}</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">DUMMY <span style="color:#f92672">=</span> <span style="color:#f92672">-</span><span style="color:#ae81ff">2</span>
-FREE <span style="color:#f92672">=</span> <span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>
-</code></pre></div><p>class DictKey:
-def <strong>init</strong>(self, key, hashvalue):
-self.key = key
-self.hashvalue = hashvalue</p>
-<pre><code>def __repr__(self):
-    return f&quot;&lt;DictKey {self.key}&gt;&quot;
-</code></pre>
-<p>class Dictionary:
-__version = 0</p>
-<pre><code>def __init__(self, *args, **kwargs):
-    self._increase_version()
-    self.indices = self._make_index_array(8)  # init with an 8 elements table
-    self.keys: List[DictKey] = []
-    self.values: List[Any] = []
-    self.used = 0  # number of items in the dictionary
-    self.filled = 0  # number of non-empty slots including dummy slots
-    self.update(*args, **kwargs)
-
-def _increase_version(self):
-    &quot;&quot;&quot;Increase version of current instance and of class attribute&quot;&quot;&quot;
-    self.__version = Dictionary.__version
-    Dictionary.__version += 1
-
-@staticmethod
-def _make_index_array(n: int) -&gt; Union[list, array.array]:
-    &quot;New sequence of indices using the smallest possible datatype&quot;
-    if n &lt;= 2 ** 7:
-        return array.array(&quot;b&quot;, [FREE]) * n  # signed char
-    if n &lt;= 2 ** 15:
-        return array.array(&quot;h&quot;, [FREE]) * n  # signed short
-    if n &lt;= 2 ** 31:
-        return array.array(&quot;l&quot;, [FREE]) * n  # signed long
-    return [FREE] * n
-
-@staticmethod
-def _generate_probes(hash_: int, mask: int) -&gt; Iterable[int]:
-    index = hash_ &amp; mask
-    yield index
-    perturb = hash_
-    while True:
-        new_hash = index * 5 + 1 + perturb
-        yield new_hash &amp; mask
-        perturb &gt;&gt;= 5
-
-def _lookup(self, key: Any, hashvalue: int) -&gt; Tuple[int, Any]:
-    mask = len(self.indices) - 1
-    freeslot = None
-    for index in self._generate_probes(hashvalue, mask):
-        entry_index = self.indices[index]
-        if entry_index == FREE:
-            return (index, FREE) if freeslot is None else (freeslot, DUMMY)
-        elif entry_index == DUMMY:
-            if freeslot is None:
-                freeslot = index
-        else:
-            dict_key = self.keys[entry_index]
-            if dict_key.key is key or (
-                dict_key.hashvalue == hashvalue and dict_key.key == key
-            ):
-                return (index, entry_index)
-
-def update(self, other=(), /, **kwargs):
-    self._sharing_keys = False
-    if isinstance(other, Dictionary):
-        if self.used &gt; 0:
-            for key in other:
-                self[key] = other[key]
-        else:
-            self._sharing_keys = True
-            self.indices = copy.copy(other.indices)
-            self.keys = other.keys
-            self.values = [None] * len(other.values)
-            self.used = other.used
-            self.filled = other.filled
-    elif hasattr(other, &quot;keys&quot;):
-        for key in other.keys():
-            self[key] = other[key]
-    else:
-        for key, value in other:
-            self[key] = value
-    for key, value in kwargs.items():
-        self[key] = value
-
-def _check_keys_sharing(self):
-    &quot;&quot;&quot;if trying to change dictionary with shared keys,
-    migrate to non shared dictionary&quot;&quot;&quot;
-    if self._sharing_keys:
-        self.keys = copy.copy(self.keys)
-
-def __getitem__(self, key: Any) -&gt; Any:
-    hashvalue = hash(key)
-    _, entry_index = self._lookup(key, hashvalue)
-    if entry_index &lt; 0:  # FREE or DUMMY
-        raise KeyError(key)
-    return self.values[entry_index]
-
-def __setitem__(self, key: Any, value: Any):
-    self._check_keys_sharing()
-    hashvalue = hash(key)
-    indices_index, entry_index = self._lookup(key, hashvalue)
-    if entry_index &lt; 0:  # FREE or DUMMY
-        self._increase_version()
-        self.indices[indices_index] = self.used
-        dict_key = DictKey(key=key, hashvalue=hashvalue)
-        self.keys.append(dict_key)
-        self.values.append(value)
-        self.used += 1
-        if entry_index == FREE:
-            self.filled += 1  # DUMMY? `filled` would have already contained it
-            if self.filled / len(self.indices) &gt; 2 / 3:
-                self._resize(3 * len(self))
-    else:
-        if value != self.values[entry_index]:  # only if its a different value
-            self._increase_version()
-            self.values[entry_index] = value
-
-def __delitem__(self, key: Any):
-    self._check_keys_sharing()
-    hashvalue = hash(key)
-    indices_index, entry_index = self._lookup(key, hashvalue)
-    if entry_index &lt; 0:
-        raise KeyError(key)
-
-    self._increase_version()
-    self.used -= 1
-    self.indices[indices_index] = DUMMY
-    # del self.entries[entry_index]
-    # swap with the last item to avoid holes
-    if entry_index != self.used:
-        last_key_dict = self.keys[-1]
-        last_value = self.values[-1]
-        last_entry_indices_index, _ = self._lookup(
-            last_key_dict.key, last_key_dict.hashvalue
-        )
-        self.indices[last_entry_indices_index] = entry_index
-        self.keys[entry_index] = last_key_dict
-        self.values[entry_index] = last_value
-    self.keys.pop()
-    self.values.pop()
-
-def _resize(self, n: int):
-    n = 2 ** n.bit_length()
-    self.indices = self._make_index_array(n)
-    for entry_index, dict_key in enumerate(self.keys):
-        for i in self._generate_probes(dict_key.hashvalue, n - 1):
-            if self.indices[i] == FREE:
-                break
-        self.indices[i] = entry_index
-    self.filled = self.used
-
-def __contains__(self, key: Any) -&gt; bool:
-    _, entry_index = self._lookup(key, hash(key))
-    return entry_index &gt;= 0
-
-def __len__(self) -&gt; int:
-    return self.used
-
-def __iter__(self):
-    return iter([dict_key.key for dict_key in self.keys])
-
-def __repr__(self) -&gt; str:
-    return f&quot;&lt;Dictionary keys={self.keys}, values={self.values}, version={self.__version}&gt;&quot;
-
-def show(self):
-    &quot;&quot;&quot;Used for nicely dispalying the dictionary&quot;&quot;&quot;
-    print(&quot;=&quot; * 50)
-    print(f&quot;Dictionary version {self.__version}&quot;)
-    print(&quot;-&quot; * 50)
-    print(f&quot;Indices: {list(self.indices)}&quot;)
-    for i, row in enumerate(zip(self.keys, self.values)):
-        print(i, row)
-    print(&quot;=&quot; * 50)
-</code></pre>
-<pre><code>
-{% endcollapse %}
-
-#### `_lookup`
-
-```python linenums=&quot;1&quot;
-def _lookup(self, key: Any, hashvalue: int) -&gt; Tuple[int, Any]:
-    mask = len(self.indices) - 1
-    freeslot = None
-    for index in self._generate_probes(hashvalue, mask):
-        entry_index = self.indices[index]
-        if entry_index == FREE:
-            return (index, FREE) if freeslot is None else (freeslot, DUMMY)
-        elif entry_index == DUMMY:
-            if freeslot is None:
-                freeslot = index
-        else:
-            dict_key = self.keys[entry_index]
-            if dict_key.key is key or (
-                dict_key.hashvalue == hashvalue and dict_key.key == key
-            ):
-                return (index, entry_index)
-</code></pre><p>It&rsquo;s quite similar to the <code>lookup</code> method from earlier, only this time it uses <code>self.indices</code> as the hash table, <code>FREE</code> to check for empty slots instead of <code>None</code>, and <code>self.keys</code> to check for equality and identity of keys.</p>
+<h4 id="_lookup"><code>_lookup</code></h4>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 1</span>    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">_lookup</span>(self, key: Any, hashvalue: int) <span style="color:#f92672">-&gt;</span> Tuple[int, Any]:
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 2</span>        mask <span style="color:#f92672">=</span> len(self<span style="color:#f92672">.</span>indices) <span style="color:#f92672">-</span> <span style="color:#ae81ff">1</span>
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 3</span>        freeslot <span style="color:#f92672">=</span> None
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 4</span>        <span style="color:#66d9ef">for</span> index <span style="color:#f92672">in</span> self<span style="color:#f92672">.</span>_generate_probes(hashvalue, mask):
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 5</span>            entry_index <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>indices[index]
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 6</span>            <span style="color:#66d9ef">if</span> entry_index <span style="color:#f92672">==</span> FREE:
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 7</span>                <span style="color:#66d9ef">return</span> (index, FREE) <span style="color:#66d9ef">if</span> freeslot <span style="color:#f92672">is</span> None <span style="color:#66d9ef">else</span> (freeslot, DUMMY)
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 8</span>            <span style="color:#66d9ef">elif</span> entry_index <span style="color:#f92672">==</span> DUMMY:
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 9</span>                <span style="color:#66d9ef">if</span> freeslot <span style="color:#f92672">is</span> None:
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">10</span>                    freeslot <span style="color:#f92672">=</span> index
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">11</span>            <span style="color:#66d9ef">else</span>:
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">12</span>                dict_key <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>keys[entry_index]
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">13</span>                <span style="color:#66d9ef">if</span> dict_key<span style="color:#f92672">.</span>key <span style="color:#f92672">is</span> key <span style="color:#f92672">or</span> (
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">14</span>                    dict_key<span style="color:#f92672">.</span>hashvalue <span style="color:#f92672">==</span> hashvalue <span style="color:#f92672">and</span> dict_key<span style="color:#f92672">.</span>key <span style="color:#f92672">==</span> key
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">15</span>                ):
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">16</span>                    <span style="color:#66d9ef">return</span> (index, entry_index)
+</code></pre></div><p>It&rsquo;s quite similar to the <code>lookup</code> method from earlier, only this time it uses <code>self.indices</code> as the hash table, <code>FREE</code> to check for empty slots instead of <code>None</code>, and <code>self.keys</code> to check for equality and identity of keys.</p>
 <h4 id="__getitem__"><code>__getitem__</code></h4>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#66d9ef">def</span> __getitem__(self, key: Any) <span style="color:#f92672">-&gt;</span> Any:
-    hashvalue <span style="color:#f92672">=</span> hash(key)
-    _, entry_index <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>_lookup(key, hashvalue)
-    <span style="color:#66d9ef">if</span> entry_index <span style="color:#f92672">&lt;</span> <span style="color:#ae81ff">0</span>:  <span style="color:#75715e"># FREE or DUMMY</span>
-        <span style="color:#66d9ef">raise</span> <span style="color:#a6e22e">KeyError</span>(key)
-    <span style="color:#66d9ef">return</span> self<span style="color:#f92672">.</span>values[entry_index]
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">1</span>    <span style="color:#66d9ef">def</span> __getitem__(self, key: Any) <span style="color:#f92672">-&gt;</span> Any:
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">2</span>        hashvalue <span style="color:#f92672">=</span> hash(key)
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">3</span>        _, entry_index <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>_lookup(key, hashvalue)
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">4</span>        <span style="color:#66d9ef">if</span> entry_index <span style="color:#f92672">&lt;</span> <span style="color:#ae81ff">0</span>:  <span style="color:#75715e"># FREE or DUMMY</span>
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">5</span>            <span style="color:#66d9ef">raise</span> <span style="color:#a6e22e">KeyError</span>(key)
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">6</span>        <span style="color:#66d9ef">return</span> self<span style="color:#f92672">.</span>values[entry_index]
 </code></pre></div><p>Same here! Very similar to the <code>search</code> method you&rsquo;ve already seen, <code>__getitem__</code> now uses a simple <code>&lt; 0</code> check to check if the slot is empty or dummy. If so, it returns a <code>KeyError</code>. If not, it returns the value from the <code>values</code> table.</p>
 <h4 id="__setitem__"><code>__setitem__</code></h4>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#66d9ef">def</span> __setitem__(self, key: Any, value: Any):
-    self<span style="color:#f92672">.</span>_check_keys_sharing()
-    hashvalue <span style="color:#f92672">=</span> hash(key)
-    indices_index, entry_index <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>_lookup(key, hashvalue)
-    <span style="color:#66d9ef">if</span> entry_index <span style="color:#f92672">&lt;</span> <span style="color:#ae81ff">0</span>:  <span style="color:#75715e"># FREE or DUMMY</span>
-        self<span style="color:#f92672">.</span>_increase_version()
-        self<span style="color:#f92672">.</span>indices[indices_index] <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>used
-        dict_key <span style="color:#f92672">=</span> DictKey(key<span style="color:#f92672">=</span>key, hashvalue<span style="color:#f92672">=</span>hashvalue)
-        self<span style="color:#f92672">.</span>keys<span style="color:#f92672">.</span>append(dict_key)
-        self<span style="color:#f92672">.</span>values<span style="color:#f92672">.</span>append(value)
-        self<span style="color:#f92672">.</span>used <span style="color:#f92672">+=</span> <span style="color:#ae81ff">1</span>
-        <span style="color:#66d9ef">if</span> entry_index <span style="color:#f92672">==</span> FREE:
-            self<span style="color:#f92672">.</span>filled <span style="color:#f92672">+=</span> <span style="color:#ae81ff">1</span>  <span style="color:#75715e"># DUMMY? `filled` would have already contained it</span>
-            <span style="color:#66d9ef">if</span> self<span style="color:#f92672">.</span>filled <span style="color:#f92672">/</span> len(self<span style="color:#f92672">.</span>indices) <span style="color:#f92672">&gt;</span> <span style="color:#ae81ff">2</span> <span style="color:#f92672">/</span> <span style="color:#ae81ff">3</span>:
-                self<span style="color:#f92672">.</span>_resize(<span style="color:#ae81ff">3</span> <span style="color:#f92672">*</span> len(self))
-    <span style="color:#66d9ef">else</span>:
-        <span style="color:#66d9ef">if</span> value <span style="color:#f92672">!=</span> self<span style="color:#f92672">.</span>values[entry_index]:  <span style="color:#75715e"># only if its a different value</span>
-            self<span style="color:#f92672">.</span>_increase_version()
-            self<span style="color:#f92672">.</span>values[entry_index] <span style="color:#f92672">=</span> v
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 1</span>    <span style="color:#66d9ef">def</span> __setitem__(self, key: Any, value: Any):
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 2</span>        self<span style="color:#f92672">.</span>_check_keys_sharing()
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 3</span>        hashvalue <span style="color:#f92672">=</span> hash(key)
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 4</span>        indices_index, entry_index <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>_lookup(key, hashvalue)
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 5</span>        <span style="color:#66d9ef">if</span> entry_index <span style="color:#f92672">&lt;</span> <span style="color:#ae81ff">0</span>:  <span style="color:#75715e"># FREE or DUMMY</span>
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 6</span>            self<span style="color:#f92672">.</span>_increase_version()
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 7</span>            self<span style="color:#f92672">.</span>indices[indices_index] <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>used
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 8</span>            dict_key <span style="color:#f92672">=</span> DictKey(key<span style="color:#f92672">=</span>key, hashvalue<span style="color:#f92672">=</span>hashvalue)
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 9</span>            self<span style="color:#f92672">.</span>keys<span style="color:#f92672">.</span>append(dict_key)
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">10</span>            self<span style="color:#f92672">.</span>values<span style="color:#f92672">.</span>append(value)
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">11</span>            self<span style="color:#f92672">.</span>used <span style="color:#f92672">+=</span> <span style="color:#ae81ff">1</span>
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">12</span>            <span style="color:#66d9ef">if</span> entry_index <span style="color:#f92672">==</span> FREE:
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">13</span>                self<span style="color:#f92672">.</span>filled <span style="color:#f92672">+=</span> <span style="color:#ae81ff">1</span>  <span style="color:#75715e"># DUMMY? `filled` would have already contained it</span>
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">14</span>                <span style="color:#66d9ef">if</span> self<span style="color:#f92672">.</span>filled <span style="color:#f92672">/</span> len(self<span style="color:#f92672">.</span>indices) <span style="color:#f92672">&gt;</span> <span style="color:#ae81ff">2</span> <span style="color:#f92672">/</span> <span style="color:#ae81ff">3</span>:
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">15</span>                    self<span style="color:#f92672">.</span>_resize(<span style="color:#ae81ff">3</span> <span style="color:#f92672">*</span> len(self))
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">16</span>        <span style="color:#66d9ef">else</span>:
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">17</span>            <span style="color:#66d9ef">if</span> value <span style="color:#f92672">!=</span> self<span style="color:#f92672">.</span>values[entry_index]:  <span style="color:#75715e"># only if its a different value</span>
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">18</span>                self<span style="color:#f92672">.</span>_increase_version()
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">19</span>                self<span style="color:#f92672">.</span>values[entry_index] <span style="color:#f92672">=</span> v
 </code></pre></div><ul>
 <li>
 <p><strong>Line 2</strong> converts the dictionary to a non shared dictionary.</p>
 </li>
 <li>
 <p><strong>Line 6</strong> increases the version if the slot is unoccupied.</p>
-<ul>
-<li><strong>Line 7</strong> fills the hashed index in <code>self.indices</code> with the index of the key and value which is essentially <code>self.used</code> because it&rsquo;s the last index of <code>keys</code> and <code>values</code>.</li>
-<li><strong>Line 13</strong> increases <code>self.filled</code> If that slot was free. That&rsquo;s done because if it weren&rsquo;t free, than <code>self.filled</code> would have already included it.</li>
-<li><strong>Line 14</strong> resizes the table by 3 if it&rsquo;s more than 2/3 filled. It follows the logic of <a href="https://github.com/python/cpython/blob/master/Objects/dictobject.c#L429">C Python resize</a>.</li>
-</ul>
 </li>
 <li>
-<p><strong>Line 17</strong> checks if the new value differs from the value that is about to be replaced. The dictionary does not increase the version if nothing changes.</p>
-<h4 id="__delitem__"><code>__delitem__</code></h4>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#66d9ef">def</span> __delitem__(self, key: Any):
-    self<span style="color:#f92672">.</span>_check_keys_sharing()
-    hashvalue <span style="color:#f92672">=</span> hash(key)
-    indices_index, entry_index <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>_lookup(key, hashvalue)
-    <span style="color:#66d9ef">if</span> entry_index <span style="color:#f92672">&lt;</span> <span style="color:#ae81ff">0</span>:
-        <span style="color:#66d9ef">raise</span> <span style="color:#a6e22e">KeyError</span>(key)
-
-    self<span style="color:#f92672">.</span>_increase_version()
-    self<span style="color:#f92672">.</span>used <span style="color:#f92672">-=</span> <span style="color:#ae81ff">1</span>
-    self<span style="color:#f92672">.</span>indices[indices_index] <span style="color:#f92672">=</span> DUMMY
-    <span style="color:#75715e"># swap with the last item to avoid holes</span>
-    <span style="color:#66d9ef">if</span> entry_index <span style="color:#f92672">!=</span> self<span style="color:#f92672">.</span>used:
-        last_key_dict <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>keys[<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>]
-        last_value <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>values[<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>]
-        last_entry_indices_index, _ <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>_lookup(
-            last_key_dict<span style="color:#f92672">.</span>key, last_key_dict<span style="color:#f92672">.</span>hashvalue
-        )
-        self<span style="color:#f92672">.</span>indices[last_entry_indices_index] <span style="color:#f92672">=</span> entry_index
-        self<span style="color:#f92672">.</span>keys[entry_index] <span style="color:#f92672">=</span> last_key_dict
-        self<span style="color:#f92672">.</span>values[entry_index] <span style="color:#f92672">=</span> last_value
-    self<span style="color:#f92672">.</span>keys<span style="color:#f92672">.</span>pop()
-    self<span style="color:#f92672">.</span>values<span style="color:#f92672">.</span>pop()
-</code></pre></div><ul>
-<li><strong>Line 2</strong> converts the dictionary to a non shared dictionary.</li>
+<p><strong>Line 7</strong> fills the hashed index in <code>self.indices</code> with the index of the key and value which is essentially <code>self.used</code> because it&rsquo;s the last index of <code>keys</code> and <code>values</code>.</p>
+</li>
+<li>
+<p><strong>Line 13</strong> increases <code>self.filled</code> If that slot was free. That&rsquo;s done because if it weren&rsquo;t free, than <code>self.filled</code> would have already included it.</p>
+</li>
+<li>
+<p><strong>Line 14</strong> resizes the table by 3 if it&rsquo;s more than 2/3 filled. It follows the logic of <a href="https://github.com/python/cpython/blob/master/Objects/dictobject.c#L429">C Python resize</a>.</p>
+</li>
 </ul>
+<ul>
+<li><strong>Line 17</strong> checks if the new value differs from the value that is about to be replaced. The dictionary does not increase the version if nothing changes.</li>
+</ul>
+<h4 id="__delitem__"><code>__delitem__</code></h4>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 1</span>    <span style="color:#66d9ef">def</span> __delitem__(self, key: Any):
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 2</span>        self<span style="color:#f92672">.</span>_check_keys_sharing()
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 3</span>        hashvalue <span style="color:#f92672">=</span> hash(key)
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 4</span>        indices_index, entry_index <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>_lookup(key, hashvalue)
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 5</span>        <span style="color:#66d9ef">if</span> entry_index <span style="color:#f92672">&lt;</span> <span style="color:#ae81ff">0</span>:
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 6</span>            <span style="color:#66d9ef">raise</span> <span style="color:#a6e22e">KeyError</span>(key)
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 7</span>
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 8</span>        self<span style="color:#f92672">.</span>_increase_version()
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 9</span>        self<span style="color:#f92672">.</span>used <span style="color:#f92672">-=</span> <span style="color:#ae81ff">1</span>
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">10</span>        self<span style="color:#f92672">.</span>indices[indices_index] <span style="color:#f92672">=</span> DUMMY
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">11</span>        <span style="color:#75715e"># swap with the last item to avoid holes</span>
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">12</span>        <span style="color:#66d9ef">if</span> entry_index <span style="color:#f92672">!=</span> self<span style="color:#f92672">.</span>used:
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">13</span>            last_key_dict <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>keys[<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>]
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">14</span>            last_value <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>values[<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>]
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">15</span>            last_entry_indices_index, _ <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>_lookup(
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">16</span>                last_key_dict<span style="color:#f92672">.</span>key, last_key_dict<span style="color:#f92672">.</span>hashvalue
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">17</span>            )
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">18</span>            self<span style="color:#f92672">.</span>indices[last_entry_indices_index] <span style="color:#f92672">=</span> entry_index
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">19</span>            self<span style="color:#f92672">.</span>keys[entry_index] <span style="color:#f92672">=</span> last_key_dict
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">20</span>            self<span style="color:#f92672">.</span>values[entry_index] <span style="color:#f92672">=</span> last_value
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">21</span>        self<span style="color:#f92672">.</span>keys<span style="color:#f92672">.</span>pop()
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">22</span>        self<span style="color:#f92672">.</span>values<span style="color:#f92672">.</span>pop()
+</code></pre></div><ul>
+<li>
+<p><strong>Line 2</strong> converts the dictionary to a non shared dictionary.</p>
 </li>
 <li>
 <p><strong>Line 6</strong> raises <code>KeyError</code> If the slot is unoccupied.</p>
-<ul>
-<li><strong>Line 10</strong> inserts a <code>DUMMY</code> value instead of the actual value.</li>
-<li><strong>Line 12</strong>: You might have thought that a <code>del</code> operation might suffice, but it would have left a hole inside the <code>keys</code> and <code>values</code> table. These tables must not contain any holes. The solution is to swap with the last item and then delete the last item.</li>
-</ul>
+</li>
+<li>
+<p><strong>Line 10</strong> inserts a <code>DUMMY</code> value instead of the actual value.</p>
+</li>
+<li>
+<p><strong>Line 12</strong>: You might have thought that a <code>del</code> operation might suffice, but it would have left a hole inside the <code>keys</code> and <code>values</code> table. These tables must not contain any holes. The solution is to swap with the last item and then delete the last item.</p>
 </li>
 <li>
 <p><strong>Line 18</strong> changes the swapped element&rsquo;s indices value to the current spot that&rsquo;s being swapped.</p>
-<h4 id="__contains__"><code>__contains__</code></h4>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#66d9ef">def</span> __contains__(self, key: Any) <span style="color:#f92672">-&gt;</span> bool:
-    _, entry_index <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>_lookup(key, hash(key))
-    <span style="color:#66d9ef">return</span> entry_index <span style="color:#f92672">&gt;=</span> <span style="color:#ae81ff">0</span>
-</code></pre></div></li>
+</li>
 </ul>
-<pre><code>This method checks if the dictionary contains a certain key. It does so by checking the result of `_lookup`, it only contains indices below zero in the case of `DUMMY` or `FREE`.
-
-    #### `__iter__`
-
-    ```python
-def __iter__(self):
-        return iter([dict_key.key for dict_key in self.keys])
-</code></pre><p>The dictionary&rsquo;s keys list holds <code>DictKey</code> instances. This method creates a new list of actual the actual keys (without the wrapper class) and wraps it inside of an iterable.</p>
+<h4 id="__contains__"><code>__contains__</code></h4>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">1</span>    <span style="color:#66d9ef">def</span> __contains__(self, key: Any) <span style="color:#f92672">-&gt;</span> bool:
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">2</span>        _, entry_index <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>_lookup(key, hash(key))
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">3</span>        <span style="color:#66d9ef">return</span> entry_index <span style="color:#f92672">&gt;=</span> <span style="color:#ae81ff">0</span>
+</code></pre></div><p>This method checks if the dictionary contains a certain key. It does so by checking the result of <code>_lookup</code>, it only contains indices below zero in the case of <code>DUMMY</code> or <code>FREE</code>.</p>
+<h4 id="__iter__"><code>__iter__</code></h4>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">1</span>    <span style="color:#66d9ef">def</span> __iter__(self):
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">2</span>            <span style="color:#66d9ef">return</span> iter([dict_key<span style="color:#f92672">.</span>key <span style="color:#66d9ef">for</span> dict_key <span style="color:#f92672">in</span> self<span style="color:#f92672">.</span>key]s)
+</code></pre></div><p>The dictionary&rsquo;s keys list holds <code>DictKey</code> instances. This method creates a new list of actual the actual keys (without the wrapper class) and wraps it inside of an iterable.</p>
+<h3 id="using-your-custom-dictionary">Using your custom dictionary</h3>
 <p>Here&rsquo;s how you can use your brand new dictionary:</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">d <span style="color:#f92672">=</span> Dictionary(
     [(<span style="color:#e6db74">&#34;key1&#34;</span>, <span style="color:#e6db74">&#34;value1&#34;</span>), (<span style="color:#e6db74">&#34;key2&#34;</span>, <span style="color:#e6db74">&#34;value2&#34;</span>), (<span style="color:#ae81ff">9</span>, <span style="color:#e6db74">&#34;different type of key&#34;</span>)]
@@ -951,14 +892,26 @@ d<span style="color:#f92672">.</span>show()
 </code></pre></div><p>In order to play with the keys sharing feature, initialize your dictionary with an already initialized dictionary:</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">new_d <span style="color:#f92672">=</span> Dictionary(d)
 new_d[<span style="color:#e6db74">&#34;key1&#34;</span>] <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;other_value&#34;</span>  <span style="color:#75715e"># No longer sharing keys</span>
-</code></pre></div><p>{% alert %}</p>
-<p><a href="https://docs.python.org/3/library/collections.abc.html#collections.abc.MutableMapping"><code>MutableMapping</code></a> could have been inherited in order to implement common methods like <code>update</code> and <code>pop</code>. I decided not to use it in order to showcase the <code>update</code> method.</p>
-<p>{% endalert %}</p>
+</code></pre></div><div class="toast toast--blue add-margin">
+	<div class="toast__content">
+		<p class="toast__type">Note</p>
+		<p class="toast__message">
+			<a href="https://docs.python.org/3/library/collections.abc.html#collections.abc.MutableMapping"><code>MutableMapping</code></a> could have been inherited in order to implement common methods like <code>update</code> and <code>pop</code>. I decided not to use it in order to showcase the <code>update</code> method.
+		</p>
+	</div>
+</div>
+
 <h3 id="dictionaries-order">Dictionaries Order</h3>
 <p>As a side effect of using compact dictionaries, when iterating over the dictionary, the array of indices is not needed as the elements are sequentially returned from the entries table. Since elements are added to the end of the entries each time, the dictionary automatically preserves the order of entries.</p>
-<p>{% alert %}</p>
-<p>**Note: ** It was an implementation detail in Python 3.6, but <a href="https://mail.python.org/pipermail/python-dev/2017-December/151283.html">was declared a feature</a> in Python 3.7.</p>
-<p>{% endalert %}</p>
+<div class="toast toast--blue add-margin">
+	<div class="toast__content">
+		<p class="toast__type">Note</p>
+		<p class="toast__message">
+			It was an implementation detail in Python 3.6, but <a href="https://mail.python.org/pipermail/python-dev/2017-December/151283.html">was declared a feature</a> in Python 3.7.
+		</p>
+	</div>
+</div>
+
 <h2 id="hashing-your-custom-classes">Hashing Your Custom Classes</h2>
 <p>You want to use a custom class as a dictionary key, or as a value in a set. Now that you know what the <code>hash</code> method does, and how these structures are implemented, you know that you can take advantage of the <code>hash</code> method and that you must also implement <code>__eq__</code> because the keys are checked for equality. Note that it is required that objects which compare equal have the same hash value. It is advised to mix together the hash values of the attributes of the object that also play a part in comparison of objects by packing them into a tuple and hashing the tuple. The following is an example of a custom class <code>CustomClass</code> hashing:</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#66d9ef">class</span> <span style="color:#a6e22e">CustomClass</span>:
@@ -979,101 +932,111 @@ new_d[<span style="color:#e6db74">&#34;key1&#34;</span>] <span style="color:#f92
             <span style="color:#66d9ef">return</span> self<span style="color:#f92672">.</span>_key <span style="color:#f92672">==</span> other<span style="color:#f92672">.</span>_key
         <span style="color:#66d9ef">return</span> NotImplemented
 </code></pre></div><p>You can see that <code>hash</code> is being used for hashing a tuple of the custom class attributes, which should be fast enough, and that same tuple is also used for equality check.</p>
-<p>{% exercise &ldquo;Comprehension Check&rdquo; %}</p>
-<p>Why is it important for hashable objects to contain <code>__eq__</code>?</p>
-<p>{% endexercise %}</p>
-<p>{% solution &ldquo;Comprehension Check&rdquo; %}</p>
-<p>You&rsquo;ve seen the implementation of the lookup method, which contained the following line (line 63):</p>
+<div class="toast add-margin">
+	<div class="toast__content">
+		<p class="toast__type">Comprehension Check</p>
+		<p class="toast__message dark-text">
+			Why is it important for hashable objects to contain <code>__eq__</code>?
+		</p>
+		<div class="toggle-solution" id="eq_hash">Show Solution</div>
+		<div class="solution dark-text" id="solution-eq_hash">
+			<p>You&rsquo;ve seen the implementation of the lookup method, which contained the following line (line 63):</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#66d9ef">if</span> dict_key<span style="color:#f92672">.</span>key <span style="color:#f92672">is</span> key <span style="color:#f92672">or</span> (
     dict_key<span style="color:#f92672">.</span>hashvalue <span style="color:#f92672">==</span> hashvalue <span style="color:#f92672">and</span> dict_key<span style="color:#f92672">.</span>key <span style="color:#f92672">==</span> key
 ):
 </code></pre></div><p>Notice that <code>dict_key.key</code> and <code>key</code> are both hashable objects that are being compared.</p>
-<p>{% endsolution %}</p>
+
+		</div>
+	</div>
+</div>
+
 <h2 id="understanding-when-to-use-python-hash-tables">Understanding When to Use Python Hash Tables</h2>
 <p>Python hash tables (and hash tables in general) trade space for time. The need to store the key and the hash along with the value of the entries plus the empty slots, make the hash tables take up more memory - but also to be drastically faster (in most scenarios).</p>
 <h3 id="set-vs-list">set vs list</h3>
-<p>{% exercise &ldquo;Comprehension Check&rdquo; %}</p>
-<p>What&rsquo;s faster, set or a list, when checking if a certain value exists?</p>
-<p>{% endexercise %}</p>
-<p>{% solution &ldquo;Comprehension Check&rdquo; %}</p>
-<p>Because sets are implemented as hash tables, and hash tables make lookups much faster because of the hash function - A set would be much faster in lookups!</p>
-<p>{% endsolution %}</p>
+<div class="toast add-margin">
+	<div class="toast__content">
+		<p class="toast__type">Comprehension Check</p>
+		<p class="toast__message dark-text">
+			What&rsquo;s faster, set or a list, when checking if a certain value exists?
+		</p>
+		<div class="toggle-solution" id="whats-faster">Show Solution</div>
+		<div class="solution dark-text" id="solution-whats-faster">
+			Because sets are implemented as hash tables, and hash tables make lookups much faster because of the hash function - A set would be much faster in lookups!
+		</div>
+	</div>
+</div>
+
 <ul>
 <li><strong>Speed</strong>: You already know that lookups are faster in sets than list - That&rsquo;s the whole point of having a hash table. Iterating over a list is slighly faster than sets. Don&rsquo;t take my word for it:</li>
 </ul>
-<pre><code class="language-pycon" data-lang="pycon">&gt;&gt;&gt; from timeit import timeit
-&gt;&gt;&gt; def test_iterating(iterable):
-...     for i in iterable:
-...         pass
-...
-&gt;&gt;&gt; setup = &quot;from __main__ import test_iterating; iterable = set(range(10000))&quot;
-&gt;&gt;&gt; timeit(&quot;test_iterating(iterable)&quot;, setup=setup, number=10000)
-0.992495904000009
-&gt;&gt;&gt; setup = &quot;from __main__ import test_iterating; iterable = list(range(10000))&quot;
-&gt;&gt;&gt; timeit(&quot;test_iterating(iterable)&quot;, setup=setup, number=10000)
-0.7114199559999861
-&gt;&gt;&gt; def test_lookups(iterable):
-...     for i in range(1000):
-...         if i in iterable:
-...             pass
-...
-&gt;&gt;&gt; setup = &quot;from __main__ import test_lookups; iterable = set(range(10000))&quot;
-&gt;&gt;&gt; timeit(&quot;test_lookups(iterable)&quot;, setup=setup, number=10000)
-0.476039572000019
-&gt;&gt;&gt; setup = &quot;from __main__ import test_lookups; iterable = list(range(10000))&quot;
-&gt;&gt;&gt; timeit(&quot;test_lookups(iterable)&quot;, setup=setup, number=10000)
-65.991043548
-</code></pre><ul>
-<li>
-<p>**Space: **If space is your main concern rather than speed, you are probably better off with lists - The difference is quite large.</p>
-<pre><code class="language-pycon" data-lang="pycon">&gt;&gt;&gt; set1 = set(range(10000))
-&gt;&gt;&gt; list1 = list(range(10000))
-&gt;&gt;&gt; import sys
-&gt;&gt;&gt; set_size = sys.getsizeof(set1)
-&gt;&gt;&gt; list_size = sys.getsizeof(list1)
-</code></pre></li>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">&gt;&gt;&gt;</span> <span style="color:#f92672">from</span> timeit <span style="color:#f92672">import</span> timeit
+<span style="color:#f92672">&gt;&gt;&gt;</span> <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">test_iterating</span>(iterable):
+<span style="color:#f92672">...</span>     <span style="color:#66d9ef">for</span> i <span style="color:#f92672">in</span> iterable:
+<span style="color:#f92672">...</span>         <span style="color:#66d9ef">pass</span>
+<span style="color:#f92672">...</span>
+<span style="color:#f92672">&gt;&gt;&gt;</span> setup <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;from __main__ import test_iterating; iterable = set(range(10000))&#34;</span>
+<span style="color:#f92672">&gt;&gt;&gt;</span> timeit(<span style="color:#e6db74">&#34;test_iterating(iterable)&#34;</span>, setup<span style="color:#f92672">=</span>setup, number<span style="color:#f92672">=</span><span style="color:#ae81ff">10000</span>)
+<span style="color:#ae81ff">0.992495904000009</span>
+<span style="color:#f92672">&gt;&gt;&gt;</span> setup <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;from __main__ import test_iterating; iterable = list(range(10000))&#34;</span>
+<span style="color:#f92672">&gt;&gt;&gt;</span> timeit(<span style="color:#e6db74">&#34;test_iterating(iterable)&#34;</span>, setup<span style="color:#f92672">=</span>setup, number<span style="color:#f92672">=</span><span style="color:#ae81ff">10000</span>)
+<span style="color:#ae81ff">0.7114199559999861</span>
+<span style="color:#f92672">&gt;&gt;&gt;</span> <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">test_lookups</span>(iterable):
+<span style="color:#f92672">...</span>     <span style="color:#66d9ef">for</span> i <span style="color:#f92672">in</span> range(<span style="color:#ae81ff">1000</span>):
+<span style="color:#f92672">...</span>         <span style="color:#66d9ef">if</span> i <span style="color:#f92672">in</span> iterable:
+<span style="color:#f92672">...</span>             <span style="color:#66d9ef">pass</span>
+<span style="color:#f92672">...</span>
+<span style="color:#f92672">&gt;&gt;&gt;</span> setup <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;from __main__ import test_lookups; iterable = set(range(10000))&#34;</span>
+<span style="color:#f92672">&gt;&gt;&gt;</span> timeit(<span style="color:#e6db74">&#34;test_lookups(iterable)&#34;</span>, setup<span style="color:#f92672">=</span>setup, number<span style="color:#f92672">=</span><span style="color:#ae81ff">10000</span>)
+<span style="color:#ae81ff">0.476039572000019</span>
+<span style="color:#f92672">&gt;&gt;&gt;</span> setup <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;from __main__ import test_lookups; iterable = list(range(10000))&#34;</span>
+<span style="color:#f92672">&gt;&gt;&gt;</span> timeit(<span style="color:#e6db74">&#34;test_lookups(iterable)&#34;</span>, setup<span style="color:#f92672">=</span>setup, number<span style="color:#f92672">=</span><span style="color:#ae81ff">10000</span>)
+<span style="color:#ae81ff">65.991043548</span>
+</code></pre></div><ul>
+<li><strong>Space:</strong> If space is your main concern rather than speed, you are probably better off with lists - The difference is quite large.</li>
 </ul>
-<blockquote>
-<blockquote>
-<blockquote>
-<p>set_size / list_size
-6.551713800339762</p>
-</blockquote>
-</blockquote>
-</blockquote>
-<pre><code>- **Order:** Sets are not ordered, while lists are. As we've talked about, sets do not implement the separate dense table that dictionaries do, which results in a single **unordered** table.
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">&gt;&gt;&gt;</span> set1 <span style="color:#f92672">=</span> set(range(<span style="color:#ae81ff">10000</span>))
+<span style="color:#f92672">&gt;&gt;&gt;</span> list1 <span style="color:#f92672">=</span> list(range(<span style="color:#ae81ff">10000</span>))
+<span style="color:#f92672">&gt;&gt;&gt;</span> <span style="color:#f92672">import</span> sys
+<span style="color:#f92672">&gt;&gt;&gt;</span> set_size <span style="color:#f92672">=</span> sys<span style="color:#f92672">.</span>getsizeof(set1)
+<span style="color:#f92672">&gt;&gt;&gt;</span> list_size <span style="color:#f92672">=</span> sys<span style="color:#f92672">.</span>getsizeof(list1)
+<span style="color:#f92672">&gt;&gt;&gt;</span> set_size <span style="color:#f92672">/</span> list_size
+<span style="color:#f92672">&gt;&gt;&gt;</span> <span style="color:#ae81ff">6.551713800339762</span>
 
-- **Hashing:** Lists do not require their elements to be hashable as opposed to sets.
-
-### dict vs namedtuple
-
-    Unlike sets and lists, dictionaries and `namedtuple` are quite different in their uses. The main uses for `namedtuple` are when you want an unmutable object that is much more readable than a dictionary and simpler than a class. As you will soon find out, `namedtuple` is also much smaller than a dictionary - so add that to your considerations!
-
-    - **Speed:** Usually, you won't have to deal with very large `namedtuple` instances nor will you iterate over them. I will however show the speed comparisons of the lookup function shown above, just in case you will.
-
-    ```pycon
-    &gt;&gt;&gt; type_ = namedtuple(&quot;test&quot;, [f&quot;t{i}&quot; for i in range(1000)])
-    &gt;&gt;&gt; t1 = type_(*list(range(1000)))
-    &gt;&gt;&gt; d1 = {f&quot;t{i}&quot;: 0 for i in range(1000)}
-    &gt;&gt;&gt; setup = &quot;from __main__ import test_lookups, t1; iterable = t1&quot;
-    &gt;&gt;&gt; timeit(&quot;test_lookups(iterable)&quot;, setup=setup, number=10000)
-    64.43791548900026
-    &gt;&gt;&gt; setup = &quot;from __main__ import test_lookups, d1; iterable = d1&quot;
-    &gt;&gt;&gt; timeit(&quot;test_lookups(iterable)&quot;, setup=setup, number=10000)
-    0.5148220669998409
-</code></pre><pre><code>    - **Space:** `namedtuple` takes drastically less space than a dictionary:
-
-    ```pycon
-    &gt;&gt;&gt; from collections import namedtuple
-    &gt;&gt;&gt; Car = namedtuple('Car', ['name', 'color', 'size'])
-    &gt;&gt;&gt; car_tuple = Car(name=&quot;Toyota&quot;, color=&quot;black&quot;, size=&quot;big&quot;)
-    &gt;&gt;&gt; car_dict = {&quot;name&quot;: &quot;Toyota&quot;, &quot;color&quot;: &quot;black&quot;, &quot;size&quot;: &quot;big&quot;}
-    &gt;&gt;&gt; import sys
-    &gt;&gt;&gt; sys.getsizeof(car_tuple)
-64
-    &gt;&gt;&gt; sys.getsizeof(car_dict)
-232
-</code></pre><ul>
+</code></pre></div><ul>
+<li>
+<p><strong>Order:</strong> Sets are not ordered, while lists are. As we&rsquo;ve talked about, sets do not implement the separate dense table that dictionaries do, which results in a single <strong>unordered</strong> table.</p>
+</li>
+<li>
+<p><strong>Hashing:</strong> Lists do not require their elements to be hashable as opposed to sets.</p>
+</li>
+</ul>
+<h3 id="dict-vs-namedtuple">dict vs namedtuple</h3>
+<p>Unlike sets and lists, dictionaries and <code>namedtuple</code> are quite different in their uses. The main uses for <code>namedtuple</code> are when you want an unmutable object that is much more readable than a dictionary and simpler than a class. As you will soon find out, <code>namedtuple</code> is also much smaller than a dictionary - so add that to your considerations!</p>
+<ul>
+<li><strong>Speed:</strong> Usually, you won&rsquo;t have to deal with very large <code>namedtuple</code> instances nor will you iterate over them. I will however show the speed comparisons of the lookup function shown above, just in case you will.</li>
+</ul>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">&gt;&gt;&gt;</span> type_ <span style="color:#f92672">=</span> namedtuple(<span style="color:#e6db74">&#34;test&#34;</span>, [f<span style="color:#e6db74">&#34;t{i}&#34;</span> <span style="color:#66d9ef">for</span> i <span style="color:#f92672">in</span> range(<span style="color:#ae81ff">1000</span>)])
+<span style="color:#f92672">&gt;&gt;&gt;</span> t1 <span style="color:#f92672">=</span> type_(<span style="color:#f92672">*</span>list(range(<span style="color:#ae81ff">1000</span>)))
+<span style="color:#f92672">&gt;&gt;&gt;</span> d1 <span style="color:#f92672">=</span> {f<span style="color:#e6db74">&#34;t{i}&#34;</span>: <span style="color:#ae81ff">0</span> <span style="color:#66d9ef">for</span> i <span style="color:#f92672">in</span> range(<span style="color:#ae81ff">1000</span>)}
+<span style="color:#f92672">&gt;&gt;&gt;</span> setup <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;from __main__ import test_lookups, t1; iterable = t1&#34;</span>
+<span style="color:#f92672">&gt;&gt;&gt;</span> timeit(<span style="color:#e6db74">&#34;test_lookups(iterable)&#34;</span>, setup<span style="color:#f92672">=</span>setup, number<span style="color:#f92672">=</span><span style="color:#ae81ff">10000</span>)
+<span style="color:#ae81ff">64.43791548900026</span>
+<span style="color:#f92672">&gt;&gt;&gt;</span> setup <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;from __main__ import test_lookups, d1; iterable = d1&#34;</span>
+<span style="color:#f92672">&gt;&gt;&gt;</span> timeit(<span style="color:#e6db74">&#34;test_lookups(iterable)&#34;</span>, setup<span style="color:#f92672">=</span>setup, number<span style="color:#f92672">=</span><span style="color:#ae81ff">10000</span>)
+<span style="color:#ae81ff">0.5148220669998409</span>
+</code></pre></div><ul>
+<li><strong>Space:</strong> <code>namedtuple</code> takes drastically less space than a dictionary:</li>
+</ul>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">&gt;&gt;&gt;</span> <span style="color:#f92672">from</span> collections <span style="color:#f92672">import</span> namedtuple
+<span style="color:#f92672">&gt;&gt;&gt;</span> Car <span style="color:#f92672">=</span> namedtuple(<span style="color:#e6db74">&#39;Car&#39;</span>, [<span style="color:#e6db74">&#39;name&#39;</span>, <span style="color:#e6db74">&#39;color&#39;</span>, <span style="color:#e6db74">&#39;size&#39;</span>])
+<span style="color:#f92672">&gt;&gt;&gt;</span> car_tuple <span style="color:#f92672">=</span> Car(name<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;Toyota&#34;</span>, color<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;black&#34;</span>, size<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;big&#34;</span>)
+<span style="color:#f92672">&gt;&gt;&gt;</span> car_dict <span style="color:#f92672">=</span> {<span style="color:#e6db74">&#34;name&#34;</span>: <span style="color:#e6db74">&#34;Toyota&#34;</span>, <span style="color:#e6db74">&#34;color&#34;</span>: <span style="color:#e6db74">&#34;black&#34;</span>, <span style="color:#e6db74">&#34;size&#34;</span>: <span style="color:#e6db74">&#34;big&#34;</span>}
+<span style="color:#f92672">&gt;&gt;&gt;</span> <span style="color:#f92672">import</span> sys
+<span style="color:#f92672">&gt;&gt;&gt;</span> sys<span style="color:#f92672">.</span>getsizeof(car_tuple)
+<span style="color:#ae81ff">64</span>
+<span style="color:#f92672">&gt;&gt;&gt;</span> sys<span style="color:#f92672">.</span>getsizeof(car_dict)
+<span style="color:#ae81ff">232</span>
+</code></pre></div><ul>
 <li>
 <p><strong>Order:</strong> Both are ordered (since Python 3.6).</p>
 </li>
@@ -1081,13 +1044,18 @@ new_d[<span style="color:#e6db74">&#34;key1&#34;</span>] <span style="color:#f92
 <p><strong>Hashing:</strong> <code>namedtuple</code> instances only allow strings to be their attribute names, as opposed to dictionaries that allow everything as long as it is hashable.</p>
 </li>
 </ul>
-<p>{% alert %}</p>
-<p><strong>Note</strong>: Python 3.7 added <a href="https://docs.python.org/3/library/dataclasses.html">data classes</a> that you may find easier to use than <code>namedtuple</code>, though this article won&rsquo;t cover them.</p>
-<p>{% endalert %}</p>
+<div class="toast toast--blue add-margin">
+	<div class="toast__content">
+		<p class="toast__type">Note</p>
+		<p class="toast__message">
+			Python 3.7 added <a href="https://docs.python.org/3/library/dataclasses.html">data classes</a> that you may find easier to use than <code>namedtuple</code>, though this article won&rsquo;t cover them.
+		</p>
+	</div>
+</div>
+
 <h2 id="conclusion">Conclusion</h2>
 <p>Congratulations! You&rsquo;ve now had a comprehensive overview on Python hash tables. You&rsquo;ve learned an important concept in computer science - hash tables, how they are implemented in Python, the awesome optimizations of Python dictionaries, and when to use Python hash tables. You now know that hash tables trade space for time, and you can even practice comparing size and speed of different data structures yourself. I hope that you feel more confident choosing data structures for your next project!</p>
-<p>You can get all of the code you saw in this tutorial by clicking the link below:</p>
-<p>{% optin &ldquo;python-hash-tables&rdquo; %}</p>
+<p>You can get all of the code you saw in this tutorial by clicking <a href="https://github.com/AdamGold/materials/tree/patch-1/python-hash-tables">here</a>.</p>
 <h2 id="further-reading">Further Reading</h2>
 <ul>
 <li>
@@ -1107,12 +1075,49 @@ new_d[<span style="color:#e6db74">&#34;key1&#34;</span>] <span style="color:#f92
     </div>
     
       
+        <div class="pagination">
+          <div class="pagination__title">
+            <span class="pagination__title-h">Read other posts</span>
+            <hr />
+          </div>
+          <div class="pagination__buttons">
+            
+            
+              <span class="button next">
+                <a href="https://adamgold.github.io/posts/awesome-python-module-you-probably-arent-using/">
+                  <span class="button__text">Awesome Python modules you probably aren’t using (but should be)</span>
+                  <span class="button__icon">→</span>
+                </a>
+              </span>
+            
+          </div>
+        </div>
+      
     
 
 
     
       
-        
+        <div id="disqus_thread"></div>
+<script type="application/javascript">
+    var disqus_config = function () {
+    
+    
+    
+    };
+    (function() {
+        if (["localhost", "127.0.0.1"].indexOf(window.location.hostname) != -1) {
+            document.getElementById('disqus_thread').innerHTML = 'Disqus comments not available by default when the website is previewed locally.';
+            return;
+        }
+        var d = document, s = d.createElement('script'); s.async = true;
+        s.src = '//' + "adam-gold" + '.disqus.com/embed.js';
+        s.setAttribute('data-timestamp', +new Date());
+        (d.head || d.body).appendChild(s);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+<a href="https://disqus.com" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
 
       
     
@@ -1150,6 +1155,21 @@ new_d[<span style="color:#e6db74">&#34;key1&#34;</span>] <span style="color:#f92
 
       
     </div>
+
+    
+      
+<script type="application/javascript">
+var doNotTrack = false;
+if (!doNotTrack) {
+	(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+	(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+	m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+	})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+	ga('create', 'UA-171406341-1', 'auto');
+	
+	ga('send', 'pageview');
+}
+</script>
 
     
   </body>
