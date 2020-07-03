@@ -6,8 +6,8 @@
     
     <meta http-equiv="content-type" content="text/html; charset=utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
-<meta name="description" content="In [1]: import this The Zen of Python, by Tim Peters Beautiful is better than ugly. ... Python is a beautiful language, and it contains many built-in modules that aim to help us write better, prettier code.
-Objective Throughout this article, we will use some lesser-known modules and methods that I think can improve the way we code - both in visibillity and in efficiency.
+<meta name="description" content="Python is a beautiful language, and it contains many built-in modules that aim to help us write better, prettier code.
+ Objective Throughout this article, we will use some lesser-known modules and methods that I think can improve the way we code - both in visibillity and in efficiency.
  NamedTuple I believe that some of you already know the more popular namedtuple from the collections module (if you don&amp;rsquo;t - check it out), but since Python 3."/>
 <meta name="keywords" content="blog, security, programming, python, developer"/>
 <meta name="robots" content="noodp"/>
@@ -28,6 +28,7 @@ Objective Throughout this article, we will use some lesser-known modules and met
   
 
   <meta property="og:type" content="article" />
+  <meta property="og:image" content="https://adamgold.github.io/img/covers/awesome-python-modules.png" />
   <meta property="article:publisher" content="" /> 
   <meta property="og:article:published_time" content=2019-03-05T22:57:10&#43;0300 /> 
   <meta property="article:published_time" content=2019-03-05T22:57:10&#43;0300 />
@@ -38,7 +39,37 @@ Objective Throughout this article, we will use some lesser-known modules and met
 
 
 
-<script type="text/javascript" src="/scripts/global.js"></script>
+<script type="text/javascript" src="/scripts/global.js"></script><script type="application/ld+json">
+	
+	{
+	  "@context": "https://schema.org",
+	  "@type": "BlogPosting",
+	  "headline": "Awesome Python modules you probably aren’t using (but should be)",
+	  "image": "https://adamgold.github.io/img/covers/awesome-python-modules.png",
+	  "datePublished": "2019-03-05T22:57:10+03:00",
+	  "dateModified": "2019-03-05T22:57:10+03:00",
+	  "author": {
+	    "@type": "Person",
+	    "name": "Adam Gold"
+	  },
+	  "mainEntityOfPage": { "@type": "WebPage" },
+	  "description": "Python is a beautiful language, and it contains many built-in modules that aim to help us write better, prettier code.\n Objective Throughout this article, we will use some lesser-known modules and methods that I think can improve the way we code - both in visibillity and in efficiency.\n NamedTuple I believe that some of you already know the more popular namedtuple from the collections module (if you don\u0026rsquo;t - check it out), but since Python 3.",
+	  "keywords": ["python", "best-practices", "modules"]
+	}
+	
+	{
+	  "@context": "https://schema.org",
+	  "@type": "Organization",
+	  "name": "Adam Gold - Writing about security and programming",
+	  "url": "https://adamgold.github.io/",
+	  "sameAs": [
+	    "https://twitter.com/adamgolds",
+	    "https://github.com/adamgold"
+	  ]
+	}
+</script>
+
+
 
 
 <link rel="stylesheet" href="https://adamgold.github.io/assets/style.css">
@@ -51,7 +82,9 @@ Objective Throughout this article, we will use some lesser-known modules and met
 <link rel="shortcut icon" href="https://adamgold.github.io/img/favicon.png">
 
 
-<meta name="twitter:card" content="summary"/>
+<meta name="twitter:card" content="summary_large_image"/>
+<meta name="twitter:image" content="https://adamgold.github.io/img/covers/awesome-python-modules.png"/>
+
 <meta name="twitter:title" content="Awesome Python modules you probably aren’t using (but should be)"/>
 <meta name="twitter:description" content="Python is a beautiful language, and it contains many modules that aim to help us write better code. Here are some lesser-known ones."/>
 
@@ -61,6 +94,7 @@ Objective Throughout this article, we will use some lesser-known modules and met
 <meta property="og:description" content="Python is a beautiful language, and it contains many modules that aim to help us write better code. Here are some lesser-known ones." />
 <meta property="og:type" content="article" />
 <meta property="og:url" content="https://adamgold.github.io/posts/awesome-python-module-you-probably-arent-using/" />
+<meta property="og:image" content="https://adamgold.github.io/img/covers/awesome-python-modules.png" />
 <meta property="article:published_time" content="2019-03-05T22:57:10+03:00" />
 <meta property="article:modified_time" content="2019-03-05T22:57:10+03:00" /><meta property="og:site_name" content="Adam Gold" />
 
@@ -181,15 +215,23 @@ Objective Throughout this article, we will use some lesser-known modules and met
     
 
     
+      
+        <img src="https://adamgold.github.io/img/covers/awesome-python-modules.png" class="post-cover" />
+      
+    
 
     <div class="post-content">
       
-      <div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">In [<span style="color:#ae81ff">1</span>]: <span style="color:#f92672">import</span> this
-The Zen of Python, by Tim Peters
+      <p><strong>Python</strong> is a beautiful language, and it contains many built-in modules that aim to help us write better, prettier code.</p>
 
-Beautiful <span style="color:#f92672">is</span> better than ugly<span style="color:#f92672">.</span>
-<span style="color:#f92672">...</span>
-</code></pre></div><p><strong>Python</strong> is a beautiful language, and it contains many built-in modules that aim to help us write better, prettier code.</p>
+<figure >
+    
+        <img class="center" src="/img/posts/python_zen.png"
+             />
+        
+    
+</figure>
+
 <h3 id="objective">Objective</h3>
 <p>Throughout this article, we will use some lesser-known modules and methods that I think can improve the way we code - both in visibillity and in efficiency.</p>
 <iframe
@@ -197,7 +239,7 @@ Beautiful <span style="color:#f92672">is</span> better than ugly<span style="col
 	width="500"
 	height="400"
 	frameborder="0"
-	class="giphy-embed"
+	class="center"
 	allowfullscreen
 ></iframe>
 

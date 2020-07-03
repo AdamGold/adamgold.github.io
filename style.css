@@ -105,3 +105,10 @@
 .solution code {
 	color: #fff;
 }
+.menu a:hover {
+	color: grey;
+}
+
+.dark-theme .menu a:hover {
+	color: #fff;
+}

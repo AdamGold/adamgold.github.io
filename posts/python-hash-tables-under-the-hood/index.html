@@ -28,6 +28,7 @@ By the end of this article, you will have an understanding of:
   
 
   <meta property="og:type" content="article" />
+  <meta property="og:image" content="https://adamgold.github.io/img/covers/under_the_hood.jpeg" />
   <meta property="article:publisher" content="" /> 
   <meta property="og:article:published_time" content=2020-06-30T18:53:11&#43;0300 /> 
   <meta property="article:published_time" content=2020-06-30T18:53:11&#43;0300 />
@@ -38,7 +39,37 @@ By the end of this article, you will have an understanding of:
 
 
 
-<script type="text/javascript" src="/scripts/global.js"></script>
+<script type="text/javascript" src="/scripts/global.js"></script><script type="application/ld+json">
+	
+	{
+	  "@context": "https://schema.org",
+	  "@type": "BlogPosting",
+	  "headline": "Python Hash Tables Under the Hood",
+	  "image": "https://adamgold.github.io/img/covers/under_the_hood.jpeg",
+	  "datePublished": "2020-06-30T18:53:11+03:00",
+	  "dateModified": "2020-06-30T18:53:11+03:00",
+	  "author": {
+	    "@type": "Person",
+	    "name": "Adam Gold"
+	  },
+	  "mainEntityOfPage": { "@type": "WebPage" },
+	  "description": "Are you a Python developer eager to learn more about the internals of the language, and to better understand how Python hash tables and data structures work? Or maybe you are experienced in other programming languages and want to understand how and where hash tables are implemented in Python? You\u0026rsquo;ve come to the right place!\nBy the end of this article, you will have an understanding of:\n What a hash table is How and where hash tables are implemented in Python How the hash function works What\u0026rsquo;s happening under the hood in dictionaries The pros and cons of hash tables in Python How are Python dictionaries so fast How to hash your custom classes  This tutorial is aimed at intermediate and proficient Python developers.",
+	  "keywords": ["python", "hash-tables", "intermediate", "dictionary"]
+	}
+	
+	{
+	  "@context": "https://schema.org",
+	  "@type": "Organization",
+	  "name": "Adam Gold - Writing about security and programming",
+	  "url": "https://adamgold.github.io/",
+	  "sameAs": [
+	    "https://twitter.com/adamgolds",
+	    "https://github.com/adamgold"
+	  ]
+	}
+</script>
+
+
 
 
 <link rel="stylesheet" href="https://adamgold.github.io/assets/style.css">
@@ -51,7 +82,9 @@ By the end of this article, you will have an understanding of:
 <link rel="shortcut icon" href="https://adamgold.github.io/img/favicon.png">
 
 
-<meta name="twitter:card" content="summary"/>
+<meta name="twitter:card" content="summary_large_image"/>
+<meta name="twitter:image" content="https://adamgold.github.io/img/covers/under_the_hood.jpeg"/>
+
 <meta name="twitter:title" content="Python Hash Tables Under the Hood"/>
 <meta name="twitter:description" content="Are you a Python developer eager to learn more about the internals of the language, and to better understand how Python hash tables and data structures work? Or maybe you are experienced in other programming languages and want to understand how and where hash tables are implemented in Python? You&#39;ve come to the right place!"/>
 
@@ -61,6 +94,7 @@ By the end of this article, you will have an understanding of:
 <meta property="og:description" content="Are you a Python developer eager to learn more about the internals of the language, and to better understand how Python hash tables and data structures work? Or maybe you are experienced in other programming languages and want to understand how and where hash tables are implemented in Python? You&#39;ve come to the right place!" />
 <meta property="og:type" content="article" />
 <meta property="og:url" content="https://adamgold.github.io/posts/python-hash-tables-under-the-hood/" />
+<meta property="og:image" content="https://adamgold.github.io/img/covers/under_the_hood.jpeg" />
 <meta property="article:published_time" content="2020-06-30T18:53:11+03:00" />
 <meta property="article:modified_time" content="2020-06-30T18:53:11+03:00" /><meta property="og:site_name" content="Adam Gold" />
 
@@ -183,6 +217,10 @@ By the end of this article, you will have an understanding of:
     
 
     
+      
+        <img src="https://adamgold.github.io/img/covers/under_the_hood.jpeg" class="post-cover" />
+      
+    
 
     <div class="post-content">
       
@@ -248,7 +286,7 @@ By the end of this article, you will have an understanding of:
 <p>
 <figure class="white-img-div" >
     
-        <img class="center" src="/images/memory-array.png"
+        <img class="center" src="/img/memory-array.png"
              />
         
     
@@ -281,7 +319,7 @@ So how come Python knows which value belongs to which key, when using non numeri
 
 <figure class="white-img-div" >
     
-        <img class="center" src="/images/first-hash-table.png"
+        <img class="center" src="/img/first-hash-table.png"
              />
         
     
@@ -299,7 +337,7 @@ So how come Python knows which value belongs to which key, when using non numeri
 
 <figure class="white-img-div" >
     
-        <img class="center" src="/images/open-addressing.png"
+        <img class="center" src="/img/open-addressing.png"
              />
         
     
@@ -312,7 +350,7 @@ So how come Python knows which value belongs to which key, when using non numeri
 
 <figure class="white-img-div" >
     
-        <img class="center" src="/images/separate-chaining.png"
+        <img class="center" src="/img/separate-chaining.png"
              />
         
     
@@ -350,7 +388,7 @@ new_hash <span style="color:#f92672">=</span> (current_index<span style="color:#
 
 <figure class="white-img-div" >
     
-        <img class="center" src="/images/open-addressing.png"
+        <img class="center" src="/img/open-addressing.png"
              />
         
     
@@ -415,7 +453,7 @@ new_hash <span style="color:#f92672">=</span> (current_index<span style="color:#
 
 <figure class="white-img-div" >
     
-        <img class="center" src="/images/last_3_bits.png"
+        <img class="center" src="/img/last_3_bits.png"
              />
         
     
@@ -631,7 +669,7 @@ new_hash <span style="color:#f92672">=</span> (current_index<span style="color:#
 
 <figure class="white-img-div" >
     
-        <img class="center" src="/images/shared-keys.png"
+        <img class="center" src="/img/shared-keys.png"
              />
         
     

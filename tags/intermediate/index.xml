@@ -22,8 +22,7 @@
       <guid>https://adamgold.github.io/posts/python-hash-tables-under-the-hood/</guid>
       <description>
         
-          
-          
+          &lt;img src=&#34;https://adamgold.github.io/img/covers/under_the_hood.jpeg&#34;/&gt;
           
         
         
@@ -47,7 +46,7 @@
 &lt;p&gt;
 &lt;figure class=&#34;white-img-div&#34; &gt;
     
-        &lt;img class=&#34;center&#34; src=&#34;https://adamgold.github.io/images/memory-array.png&#34;
+        &lt;img class=&#34;center&#34; src=&#34;https://adamgold.github.io/img/memory-array.png&#34;
              /&gt;
         
     
@@ -80,7 +79,7 @@ So how come Python knows which value belongs to which key, when using non numeri
 
 &lt;figure class=&#34;white-img-div&#34; &gt;
     
-        &lt;img class=&#34;center&#34; src=&#34;https://adamgold.github.io/images/first-hash-table.png&#34;
+        &lt;img class=&#34;center&#34; src=&#34;https://adamgold.github.io/img/first-hash-table.png&#34;
              /&gt;
         
     
@@ -98,7 +97,7 @@ So how come Python knows which value belongs to which key, when using non numeri
 
 &lt;figure class=&#34;white-img-div&#34; &gt;
     
-        &lt;img class=&#34;center&#34; src=&#34;https://adamgold.github.io/images/open-addressing.png&#34;
+        &lt;img class=&#34;center&#34; src=&#34;https://adamgold.github.io/img/open-addressing.png&#34;
              /&gt;
         
     
@@ -111,7 +110,7 @@ So how come Python knows which value belongs to which key, when using non numeri
 
 &lt;figure class=&#34;white-img-div&#34; &gt;
     
-        &lt;img class=&#34;center&#34; src=&#34;https://adamgold.github.io/images/separate-chaining.png&#34;
+        &lt;img class=&#34;center&#34; src=&#34;https://adamgold.github.io/img/separate-chaining.png&#34;
              /&gt;
         
     
@@ -149,7 +148,7 @@ new_hash &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; (current_index
 
 &lt;figure class=&#34;white-img-div&#34; &gt;
     
-        &lt;img class=&#34;center&#34; src=&#34;https://adamgold.github.io/images/open-addressing.png&#34;
+        &lt;img class=&#34;center&#34; src=&#34;https://adamgold.github.io/img/open-addressing.png&#34;
              /&gt;
         
     
@@ -214,7 +213,7 @@ new_hash &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; (current_index
 
 &lt;figure class=&#34;white-img-div&#34; &gt;
     
-        &lt;img class=&#34;center&#34; src=&#34;https://adamgold.github.io/images/last_3_bits.png&#34;
+        &lt;img class=&#34;center&#34; src=&#34;https://adamgold.github.io/img/last_3_bits.png&#34;
              /&gt;
         
     
@@ -430,7 +429,7 @@ new_hash &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; (current_index
 
 &lt;figure class=&#34;white-img-div&#34; &gt;
     
-        &lt;img class=&#34;center&#34; src=&#34;https://adamgold.github.io/images/shared-keys.png&#34;
+        &lt;img class=&#34;center&#34; src=&#34;https://adamgold.github.io/img/shared-keys.png&#34;
              /&gt;
         
     

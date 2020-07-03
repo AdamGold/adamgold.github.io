@@ -22,17 +22,20 @@
       <guid>https://adamgold.github.io/posts/awesome-python-module-you-probably-arent-using/</guid>
       <description>
         
-          
-          
+          &lt;img src=&#34;https://adamgold.github.io/img/covers/awesome-python-modules.png&#34;/&gt;
           
         
         
-        &lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-python&#34; data-lang=&#34;python&#34;&gt;In [&lt;span style=&#34;color:#ae81ff&#34;&gt;1&lt;/span&gt;]: &lt;span style=&#34;color:#f92672&#34;&gt;import&lt;/span&gt; this
-The Zen of Python, by Tim Peters
+        &lt;p&gt;&lt;strong&gt;Python&lt;/strong&gt; is a beautiful language, and it contains many built-in modules that aim to help us write better, prettier code.&lt;/p&gt;
 
-Beautiful &lt;span style=&#34;color:#f92672&#34;&gt;is&lt;/span&gt; better than ugly&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;
-&lt;span style=&#34;color:#f92672&#34;&gt;...&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;&lt;strong&gt;Python&lt;/strong&gt; is a beautiful language, and it contains many built-in modules that aim to help us write better, prettier code.&lt;/p&gt;
+&lt;figure &gt;
+    
+        &lt;img class=&#34;center&#34; src=&#34;https://adamgold.github.io/img/posts/python_zen.png&#34;
+             /&gt;
+        
+    
+&lt;/figure&gt;
+
 &lt;h3 id=&#34;objective&#34;&gt;Objective&lt;/h3&gt;
 &lt;p&gt;Throughout this article, we will use some lesser-known modules and methods that I think can improve the way we code - both in visibillity and in efficiency.&lt;/p&gt;
 &lt;iframe
@@ -40,7 +43,7 @@ Beautiful &lt;span style=&#34;color:#f92672&#34;&gt;is&lt;/span&gt; better than 
 	width=&#34;500&#34;
 	height=&#34;400&#34;
 	frameborder=&#34;0&#34;
-	class=&#34;giphy-embed&#34;
+	class=&#34;center&#34;
 	allowfullscreen
 &gt;&lt;/iframe&gt;
 
