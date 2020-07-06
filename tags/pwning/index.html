@@ -2,23 +2,23 @@
 <html lang="en">
   <head>
     
-      <title>404 Page not found :: Adam Gold — Writing about security and programming</title>
+      <title>pwning :: Adam Gold — Writing about security and programming</title>
     
     <meta http-equiv="content-type" content="text/html; charset=utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
 <meta name="description" content=""/>
 <meta name="keywords" content="blog, security, programming, python, developer"/>
 <meta name="robots" content="noodp"/>
-<link rel="canonical" href="https://adamgold.github.io/404.html" />
+<link rel="canonical" href="https://adamgold.github.io/tags/pwning/" />
 
 
-<base href="https://adamgold.github.io/404.html">
-<meta name="url" content="https://adamgold.github.io/404.html" />
+<base href="https://adamgold.github.io/tags/pwning/">
+<meta name="url" content="https://adamgold.github.io/tags/pwning/" />
 <meta property="og:locale" content="en">
 
 
-  <title itemprop="name">404 Page not found | Writing about security and programming</title>
-  <meta itemprop="name" content="404 Page not found | Writing about security and programming" />
+  <title itemprop="name">pwning | Writing about security and programming</title>
+  <meta itemprop="name" content="pwning | Writing about security and programming" />
 
 
 
@@ -50,19 +50,20 @@
 
 
 <meta name="twitter:card" content="summary"/>
-<meta name="twitter:title" content="404 Page not found"/>
+<meta name="twitter:title" content="pwning"/>
 <meta name="twitter:description" content="Writing about security and programming"/>
 
 
 
-<meta property="og:title" content="404 Page not found" />
+<meta property="og:title" content="pwning" />
 <meta property="og:description" content="Writing about security and programming" />
 <meta property="og:type" content="website" />
-<meta property="og:url" content="https://adamgold.github.io/404.html" />
-<meta property="og:site_name" content="Adam Gold" />
+<meta property="og:url" content="https://adamgold.github.io/tags/pwning/" />
+<meta property="og:updated_time" content="2020-01-04T21:28:48+03:00" /><meta property="og:site_name" content="Adam Gold" />
 
 
 
+<link rel="alternate" type="application/rss+xml" href="/tags/pwning/index.xml" title="Adam Gold" />
 
 
 
@@ -143,39 +144,96 @@
 
       <div class="content">
         
-<div class="post">
-    <h1 class="post-title"><a href="https://adamgold.github.io/404.html">404 Page not found</a></h1>
-    <div class="post-content">
-        <p>Hmm&hellip; Sorry, this page seems to be missing.
+  <div class="posts">
+    
+    <div class="post on-list">
+      <h1 class="post-title"><a href="https://adamgold.github.io/posts/ropemporium-ret2csu/">ROP Emporium Ret2CSU Writeup</a></h1>
+      <div class="post-meta">
         
-        Maybe these tags will help you find what you&rsquo;re looking for. 😄</p>
-        <h2>Tags</h2>
-        <div class="terms">
-            <ul class="terms__list">
-                
-                    <li class="terms__term"><a href="https://adamgold.github.io/tags/best-practices/">#best-practices</a><span class="terms__term-count">1</span></li>
-                
-                    <li class="terms__term"><a href="https://adamgold.github.io/tags/binary-exploitation/">#binary-exploitation</a><span class="terms__term-count">2</span></li>
-                
-                    <li class="terms__term"><a href="https://adamgold.github.io/tags/dictionary/">#dictionary</a><span class="terms__term-count">1</span></li>
-                
-                    <li class="terms__term"><a href="https://adamgold.github.io/tags/hash-tables/">#hash-tables</a><span class="terms__term-count">1</span></li>
-                
-                    <li class="terms__term"><a href="https://adamgold.github.io/tags/intermediate/">#intermediate</a><span class="terms__term-count">1</span></li>
-                
-                    <li class="terms__term"><a href="https://adamgold.github.io/tags/modules/">#modules</a><span class="terms__term-count">1</span></li>
-                
-                    <li class="terms__term"><a href="https://adamgold.github.io/tags/pwning/">#pwning</a><span class="terms__term-count">2</span></li>
-                
-                    <li class="terms__term"><a href="https://adamgold.github.io/tags/python/">#python</a><span class="terms__term-count">2</span></li>
-                
-                    <li class="terms__term"><a href="https://adamgold.github.io/tags/rop/">#rop</a><span class="terms__term-count">2</span></li>
-                
-            </ul>
-        </div>
+          <span class="post-date">
+            2020-01-04
+          </span>
+
+          
         
+        
+        
+          <span class="post-read-time">— 5 min read</span>
+        
+      </div>
+
+      
+        <span class="post-tags">
+          
+            #<a href="https://adamgold.github.io/tags/binary-exploitation/">binary-exploitation</a>&nbsp;
+          
+            #<a href="https://adamgold.github.io/tags/pwning/">pwning</a>&nbsp;
+          
+            #<a href="https://adamgold.github.io/tags/rop/">rop</a>&nbsp;
+          
+        </span>
+      
+
+      
+
+      <div class="post-content">
+        
+          Last ROP Emporium callenge - <a href="https://ropemporium.com/challenge/ret2csu.html">Ret2CSU</a>! This challenge requires a usage of something called Universal Gadget, that will allow us to use three parameters to functions calls, when we do not have any useful gadgets available to us. Our goal is to call the <code>ret2win</code> function with <code>rdx</code> filled with <code>0xdeadcafebabebeef</code>. As mentioned before, the main challenge here is having no gadgets allowing us to directly control <code>rdx</code>.
+        
+      </div>
+      
+        <div><a class="read-more button" href="/posts/ropemporium-ret2csu/">Read more →</a></div>
+      
     </div>
+    
+    <div class="post on-list">
+      <h1 class="post-title"><a href="https://adamgold.github.io/posts/ropemporium-pivot/">ROP Emporium Pivot Writeup</a></h1>
+      <div class="post-meta">
+        
+          <span class="post-date">
+            2020-01-03
+          </span>
+
+          
+        
+        
+        
+          <span class="post-read-time">— 10 min read</span>
+        
+      </div>
+
+      
+        <span class="post-tags">
+          
+            #<a href="https://adamgold.github.io/tags/binary-exploitation/">binary-exploitation</a>&nbsp;
+          
+            #<a href="https://adamgold.github.io/tags/pwning/">pwning</a>&nbsp;
+          
+            #<a href="https://adamgold.github.io/tags/rop/">rop</a>&nbsp;
+          
+        </span>
+      
+
+      
+
+      <div class="post-content">
+        
+          ROP Emporium callenge - <a href="https://ropemporium.com/challenge/pivot.html">Pivot</a>! This challenge, as most ROP Emporium challenges, requires us to overflow the stack to reach the <code>ret2win</code> function. In order to achieve this, we are going to need to create a stack pivot since there is not enough room in the stack itself.
+        
+      </div>
+      
+        <div><a class="read-more button" href="/posts/ropemporium-pivot/">Read more →</a></div>
+      
+    </div>
+    
+    <div class="pagination">
+  <div class="pagination__buttons">
+    
+    
+  </div>
 </div>
+
+  </div>
 
       </div>
 

