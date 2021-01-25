@@ -1,1 +1,1 @@
-# adamgold.github.io
+[adamgold.github.io](Writing about security and programming)
